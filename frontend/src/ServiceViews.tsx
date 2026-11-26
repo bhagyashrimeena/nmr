@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StockOperations from './StockOperations'
+import DomainWorkbench from './DomainWorkbench'
 import V2ParticipantRecord from './V2ParticipantRecord'
 import PensionOperations from './PensionOperations'
 import EquityOperations from './EquityOperations'
@@ -26,14 +27,14 @@ function Panel({ title, note, children }: { title: string; note?: string; childr
 }
 
 const tabs: Record<ServiceKey, string[]> = {
-  stock: ['Overview', 'Contributions', 'Purchases', 'Activity', 'Statements',
+  stock: ['Workbench', 'Overview', 'Contributions', 'Purchases', 'Activity', 'Statements',
           'Plan operations', 'Members', 'Payroll batches', 'Purchase cycles', 'Transfer requests', 'Exceptions'],
-  pension: ['Overview', 'Contributions', 'Valuations', 'Projection', 'Statements',
+  pension: ['Workbench', 'Overview', 'Contributions', 'Valuations', 'Projection', 'Statements',
             'Plan operations', 'Participants', 'Fund positions', 'Investment funds',
             'Instruction queue', 'Switch drafts', 'Exceptions', 'Reports'],
-  wellness: ['Resources', 'Progress', 'Savings calculator', 'Program overview', 'Content library', 'Benefit rules', 'Seminars'],
-  custody: ['Overview', 'Valuations', 'Dividends', 'Corporate actions', 'Settlements', 'Statements', 'Account registry', 'Position detail', 'Dividend processing', 'Action register', 'Settlement monitor'],
-  equity: ['Awards', 'Vesting', 'Statements', 'Equity plan', 'Grant register', 'Vesting schedule', 'Release queue', 'Equity exceptions'],
+  wellness: ['Workbench', 'Resources', 'Progress', 'Savings calculator', 'Program overview', 'Content library', 'Benefit rules', 'Seminars'],
+  custody: ['Workbench', 'Overview', 'Valuations', 'Dividends', 'Corporate actions', 'Settlements', 'Statements', 'Account registry', 'Position detail', 'Dividend processing', 'Action register', 'Settlement monitor'],
+  equity: ['Workbench', 'Awards', 'Vesting', 'Statements', 'Equity plan', 'Grant register', 'Vesting schedule', 'Release queue', 'Equity exceptions'],
 }
 const stockOperationsTabs = ['Plan operations', 'Members', 'Payroll batches', 'Purchase cycles', 'Transfer requests', 'Exceptions']
 const pensionOperationsTabs = ['Plan operations', 'Participants', 'Fund positions', 'Investment funds', 'Instruction queue', 'Switch drafts', 'Exceptions', 'Reports']
@@ -88,10 +89,39 @@ export default function ServiceViews({ page, summary, tenant, employee, request,
   }
 
   const data = summary[page]
-  if (!data && page === 'wellness') return <div className="empty service-empty">No wellness account is recorded for this employee.</div>
+  if (!data && page === 'wellness' && active !== 'Workbench') return <div className="empty service-empty">No wellness account is recorded for this employee.</div>
   return <>
-    <div className="subtabs" role="tablist" aria-label={`${page} views`}>{tabs[page].map(name => <button type="button" role="tab" aria-selected={active === name} className={active === name ? 'selected' : ''} key={name} onClick={() => { setTab(name); setProjection(null); setError('') }}>{name}</button>)}</div>
+    <div className="domain-navigation">
+      <div className="domain-navigation-group">
+        <span>Provider workspace</span>
+        <div className="subtabs" role="tablist" aria-label="Provider workspaces">
+          {['Workbench', ...(
+            page === 'stock' ? stockOperationsTabs : page === 'pension' ? pensionOperationsTabs :
+            page === 'equity' ? equityOperationsTabs : page === 'custody' ? custodyOperationsTabs :
+            wellnessOperationsTabs
+          )].map(name => <button type="button" role="tab" aria-selected={active === name}
+              className={active === name ? 'selected' : ''} key={name}
+              onClick={() => {setTab(name);setProjection(null);setError('')}}>{name}</button>)}
+        </div>
+      </div>
+      <div className="domain-navigation-group domain-navigation-employee">
+        <span>Participant account</span>
+        <div className="subtabs" role="tablist" aria-label="Participant account views">
+          {tabs[page].filter(name => name !== 'Workbench' && !(
+            page === 'stock' ? stockOperationsTabs : page === 'pension' ? pensionOperationsTabs :
+            page === 'equity' ? equityOperationsTabs : page === 'custody' ? custodyOperationsTabs :
+            wellnessOperationsTabs
+          ).includes(name)).map(name => <button type="button" role="tab" aria-selected={active === name}
+              className={active === name ? 'selected' : ''} key={name}
+              onClick={() => {setTab(name);setProjection(null);setError('')}}>{name}</button>)}
+        </div>
+      </div>
+    </div>
     {error && <div className="error" role="alert">{error}</div>}
+    {active === 'Workbench' && <DomainWorkbench
+      key={page + ':' + tenant} domain={page} tenant={tenant} employee={employee}
+      request={request} onNavigate={next => {setTab(next);setError('');setProjection(null)}}
+    />}
     {page === 'stock' && stockOperationsTabs.includes(active) && <StockOperations tab={active} tenant={tenant} request={request} onRefresh={onRefresh}/>}
     {page === 'pension' && pensionOperationsTabs.includes(active) && <PensionOperations tab={active} tenant={tenant} employee={employee} request={request}/>}
     {page === 'equity' && equityOperationsTabs.includes(active) && <EquityOperations tab={active} tenant={tenant} employee={employee} request={request}/>}
