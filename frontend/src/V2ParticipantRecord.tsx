@@ -94,14 +94,18 @@ export default function V2ParticipantRecord({page, tab, tenant, employee, reques
     </section>
   )
 
-  return <>
+  return <div className={"v2-record v2-record--" + page}>
     <div className="v2-source-bar">
-      <div><strong>Operational financial record</strong><span>V2 journal · {record.employee_name} · as of {day(record.as_of)}</span></div>
-      <button type="button" onClick={() => setTick(x => x + 1)}>Refresh records</button>
+      <div className="v2-source-ident">
+        <span className="v2-source-eyebrow">Financial source record</span>
+        <strong>Account activity & reconciliation</strong>
+        <span>{record.employee_name} · V2 journal · Record date {day(record.as_of)}</span>
+      </div>
+      <button className="v2-source-refresh" type="button" onClick={() => setTick(x => x + 1)}>Refresh records</button>
     </div>
     {page === 'stock' && <>
       {tab === 'Overview' && <>
-        <div className="metrics">
+        <div className="metrics v2-stock-metrics">
           <Indicator label="Beneficial shares held" value={quantity(s.shares_held)}/>
           <Indicator label="Uninvested association cash" value={currency(s.uninvested_cash_jpy)}/>
           <Indicator label="Posted employee cash" value={currency(s.posted_employee_cash_jpy)}/>
@@ -201,5 +205,5 @@ export default function V2ParticipantRecord({page, tab, tenant, employee, reques
       </section>}
     </>}
     <p className="panel-note">Source register: V2 operations · Record date {day(record.as_of)} · Financial values are not live market prices.</p>
-  </>
+  </div>
 }
