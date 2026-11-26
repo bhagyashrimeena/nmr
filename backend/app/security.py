@@ -1,0 +1,102 @@
+import hmac
+import os
+from datetime import datetime, timedelta, timezone
+
+import jwt
+from fastapi import Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+
+from .db import get_db
+from .models import AuditEvent, Employee, McpSetting, Tenant
+
+ISSUER = "nmr-demo"
+AUDIENCE = "nmr-workplace-api"
+bearer = HTTPBearer(auto_error=False)
+
+
+class ApiError(Exception):
+    def __init__(self, status: int, code: str, message: str):
+        self.status = status
+        self.code = code
+        self.message = message
+
+
+def secret():
+    value = os.getenv("NMR_JWT_SECRET", "")
+    if len(value) < 32:
+        raise RuntimeError("Set NMR_JWT_SECRET to at least 32 characters (see backend/.env.example)")
+    return value
+
+
+def mint_token(*, sub: str, role: str, scopes: list[str], tenant_id: str | None = None, employee_id: str | None = None, minutes: int = 30):
+    now = datetime.now(timezone.utc)
+    claims = {"iss": ISSUER, "aud": AUDIENCE, "sub": sub, "role": role, "scopes": scopes,
+              "iat": now, "nbf": now, "exp": now + timedelta(minutes=minutes)}
+    if tenant_id:
+        claims["tenant_id"] = tenant_id
+    if employee_id:
+        claims["employee_id"] = employee_id
+    return jwt.encode(claims, secret(), algorithm="HS256")
+
+
+def read_claims(credentials: HTTPAuthorizationCredentials | None):
+    if not credentials:
+        raise ApiError(401, "INVALID_TOKEN", "A bearer token is required.")
+    try:
+        claims = jwt.decode(credentials.credentials, secret(), algorithms=["HS256"], issuer=ISSUER, audience=AUDIENCE,
+                            options={"require": ["exp", "iat", "nbf", "iss", "aud", "sub"]})
+    except jwt.PyJWTError:
+        raise ApiError(401, "INVALID_TOKEN", "The bearer token is invalid or expired.") from None
+    return claims
+
+
+def audit(db: Session, request: Request, *, actor: str, tenant_id: str | None, employee_id: str | None, service: str, outcome: str, reason: str):
+    db.add(AuditEvent(request_id=request.state.request_id, actor=actor, tenant_id=tenant_id,
+                      employee_id=employee_id, service=service, outcome=outcome, reason=reason))
+    db.commit()
+
+
+def require_admin(write: bool = False):
+    def dependency(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        claims = read_claims(credentials)
+        scope = "admin:write" if write else "admin:read"
+        if claims.get("role") != "admin" or scope not in claims.get("scopes", []):
+            raise ApiError(403, "FORBIDDEN", "Administrator permission is required.")
+        return claims
+    return dependency
+
+
+def require_client(service: str):
+    def dependency(request: Request, db: Session = Depends(get_db), credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        claims = read_claims(credentials)
+        tenant_id = claims.get("tenant_id")
+        employee_id = claims.get("employee_id")
+        actor = claims.get("sub", "unknown")
+
+        def deny(code: str, message: str, status: int = 403):
+            audit(db, request, actor=actor, tenant_id=tenant_id, employee_id=employee_id,
+                  service=service, outcome="denied", reason=code)
+            raise ApiError(status, code, message)
+
+        if claims.get("role") != "employee" or "read:finance" not in claims.get("scopes", []):
+            deny("FORBIDDEN", "Employee finance read permission is required.")
+        if not isinstance(tenant_id, str) or not isinstance(employee_id, str) or actor != f"employee:{employee_id}":
+            deny("FORBIDDEN", "Employee identity claims are inconsistent.")
+        if not db.get(Tenant, tenant_id):
+            deny("FORBIDDEN", "Tenant is not available.")
+        setting = db.get(McpSetting, tenant_id)
+        if not setting or not setting.enabled:
+            deny("MCP_ACCESS_DISABLED", "External access is disabled for this client.")
+        employee = db.get(Employee, employee_id)
+        if not employee or employee.tenant_id != tenant_id or not employee.active:
+            deny("EMPLOYEE_NOT_FOUND", "Employee record is not available.", 404)
+        if service not in employee.allowed_services.split(","):
+            deny("SERVICE_FORBIDDEN", "This employee cannot access the service.")
+        return claims
+    return dependency
+
+
+def verify_admin_password(username: str, password: str):
+    expected = os.getenv("NMR_ADMIN_PASSWORD", "")
+    return bool(expected) and hmac.compare_digest(username, "nmr-admin") and hmac.compare_digest(password, expected)
