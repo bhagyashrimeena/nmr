@@ -10,7 +10,7 @@ const envPath = resolve(root, 'backend/.env')
 const env = existsSync(envPath) ? readFileSync(envPath, 'utf8') : ''
 const password = process.env.NMR_ADMIN_PASSWORD || env.match(/^NMR_ADMIN_PASSWORD=(.+)$/m)?.[1]?.trim()
 if (!password) throw Error('Set NMR_ADMIN_PASSWORD or configure backend/.env')
-const chromePath = process.env.NMR_CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe'
+const chromePath = process.env.NMR_CHROME_PATH || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : chromium.executablePath())
 const baseUrl = process.env.NMR_PORTAL_URL || 'http://127.0.0.1:5173'
 const outputDir = resolve(root, 'docs/screenshots/specialist')
 mkdirSync(outputDir, {recursive:true})
