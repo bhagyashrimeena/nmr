@@ -10,7 +10,7 @@ Source blueprint: `NMR_Workplace_Finance_V2_Functional_Blueprint.md`. This work 
 - `backend/app/population_seed.py`: additive, deterministic three-client participant population and service agreements.
 - `backend/app/provider_ops.py`: case queue, evidenced case review, and source-derived reports.
 - `backend/app/{stock,pension,equity,custody,wellness}_v2.py`: `/api/v2` routers. Client handlers use a shared signed-identity and tenant/service policy dependency. Admin handlers use separate admin permissions.
-- `frontend/src/*Operations.tsx`: operator views for each service. They read V2 routes. The existing overview views continue to use V1 summaries.
+- `frontend/src/*Operations.tsx`: operator views for each service. They read V2 routes. The stock overview also reads its current cash, contribution, and unit figures from the V2 operational summary; other overview panels still use V1 summaries.
 - `frontend/src/ProviderDirectories.tsx` and `ProviderOperations.tsx`: searchable participants, agreements, case history, and dated report views.
 - `backend/tests/test_*_v2.py` and `backend/tests/test_realism_qa.py`: domain, identity, policy, API, and financial operations verification.
 - `docs/v2-api-contract.md`: teammate handoff; `docs/openapi.json`: exported OpenAPI snapshot.
