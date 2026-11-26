@@ -48,6 +48,12 @@ export default function V2ParticipantRecord({page, tab, tenant, employee, reques
   const [error,setError] = useState('')
   const [loading,setLoading] = useState(true)
   const [tick,setTick] = useState(0)
+  const [pensionYears,setPensionYears] = useState(20)
+  const [pensionMonthly,setPensionMonthly] = useState(35000)
+  const [pensionReturn,setPensionReturn] = useState(4)
+  const [forecast,setForecast] = useState<any>(null)
+  const [forecastError,setForecastError] = useState('')
+  const [forecastBusy,setForecastBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -59,6 +65,18 @@ export default function V2ParticipantRecord({page, tab, tenant, employee, reques
       .finally(() => {if (!cancelled) setLoading(false)})
     return () => {cancelled = true}
   }, [page, tenant, employee, request, refreshKey, tick])
+
+  async function calculatePensionProjection() {
+    setForecastBusy(true); setForecastError(''); setForecast(null)
+    try {
+      const params = new URLSearchParams({
+        years: String(pensionYears), monthly_jpy: String(pensionMonthly),
+        annual_return_pct: String(pensionReturn),
+      })
+      setForecast(await request('/api/v2/admin/tenants/' + encodeURIComponent(tenant) +
+        '/employees/' + encodeURIComponent(employee) + '/pension/retirement-projection?' + params))
+    } catch (e) { setForecastError((e as Error).message) } finally { setForecastBusy(false) }
+  }
 
   if (loading) return <div className="loading">Loading reconciled V2 financial records…</div>
   if (error) return <div className="error" role="alert">{error}</div>
@@ -118,8 +136,28 @@ export default function V2ParticipantRecord({page, tab, tenant, employee, reques
       </section>}
       {tab === 'Contributions' && journalTable(events.filter(e => e.type.includes('CONTRIBUTION') || e.type.includes('EMPLOYER')), 'Pension contribution and remittance events')}
       {tab === 'Statements' && journalTable(events, 'Pension valuation and cash-flow source journal')}
-      {tab === 'Projection' && <section className="section"><h2>Projection controls</h2>
-        <p className="panel-note">The current authoritative account balance is {currency(s.balance_jpy)}. Projection requests should use the backend calculator with explicitly supplied assumptions; this screen does not invent a return forecast.</p>
+      {tab === 'Projection' && <section className="section">
+        <div className="section-heading"><h2>Retirement projection</h2><span>Uses reconciled V2 current holdings</span></div>
+        <p className="panel-note">Starting balance: {currency(s.balance_jpy)} · Dated financial snapshot {day(record.as_of)}. Constant hypothetical returns are not guaranteed.</p>
+        <div className="workflow-form">
+          <label>Additional monthly contribution (JPY)
+            <input type="number" min="0" max="1000000" step="1" value={pensionMonthly} onChange={e => setPensionMonthly(Number(e.target.value))} />
+          </label>
+          <label>Projection period (years)
+            <input type="number" min="1" max="40" step="1" value={pensionYears} onChange={e => setPensionYears(Number(e.target.value))}/>
+          </label>
+          <label>Assumed annual return (%)
+            <input type="number" min="0" max="12" step="0.1" value={pensionReturn} onChange={e => setPensionReturn(Number(e.target.value))}/>
+          </label>
+          <button type="button" className="primary" onClick={calculatePensionProjection} disabled={forecastBusy}>{forecastBusy ? 'Calculating…' : 'Calculate projection'}</button>
+        </div>
+        {forecastError && <div className="error" role="alert">{forecastError}</div>}
+        {forecast && <div className="metrics">
+          <Indicator label="Current account" value={currency(forecast.projection.starting_balance_jpy)}/>
+          <Indicator label="Current + future contributions" value={currency(forecast.projection.total_contributed_jpy)}/>
+          <Indicator label="Illustrative future value" value={currency(forecast.projection.illustrative_future_value_jpy)}/>
+        </div>}
+        {forecast && <p className="panel-note">{forecast.projection.disclaimer} Formula: {forecast.assumptions.formula_id}.</p>}
       </section>}
     </>}
     {page === 'custody' && <>
