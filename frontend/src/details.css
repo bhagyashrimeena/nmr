@@ -47,3 +47,24 @@
 @media(max-width:700px){.calculator,.audit-filter-group{align-items:stretch;flex-direction:column}.inline-filter input,.inline-filter select,.calculator input,.audit-filter-group select{width:100%}.subtabs button{padding:11px}.service-access-row{padding:16px}.access-summary strong{white-space:normal}}
 
 .operations-review button{margin:12px 8px 0 0;padding:9px 12px;border:1px solid #cbd6e2;border-radius:5px;background:#fff;color:#213c5e;font-size:12px;font-weight:700}.operations-review button:not(:disabled):hover{background:#edf3f8}.operations-review select{border:1px solid #d7e0e8;border-radius:5px;padding:10px 11px;color:#263950;background:#fff}
+
+
+/* Provider operations: auditable stock payroll and purchase workflows */
+.workflow-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end;margin-top:14px}
+.workflow-form label,.workflow-reviews label{display:flex;flex-direction:column;gap:7px;color:#53677b;font-size:12px;font-weight:600}
+.workflow-form input,.workflow-form select,.workflow-reviews input{width:100%;min-width:0;border:1px solid #cbd6e2;border-radius:6px;padding:10px 11px;color:#1b3045;background:#fff;font-size:13px}
+.workflow-form button{min-height:39px;align-self:end}
+.workflow-form .panel-note{grid-column:1/-1;font-size:12px;margin:0;color:#66798c;line-height:1.6}
+.workflow-estimate{display:flex;flex-direction:column;gap:5px;border-left:2px solid #a2384a;padding-left:11px;font-size:11px;color:#596f82}
+.workflow-estimate strong{font-size:15px;color:#203950}
+.workflow-reviews{margin-top:20px;border-top:1px solid #e1e7ee;padding-top:16px;display:grid;gap:10px}
+.workflow-reviews h3{font-size:14px;color:#213a52;margin:0}
+.workflow-reviews label{max-width:540px}
+.workflow-review-row{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e8edf1}
+.workflow-review-row span{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+.workflow-review-row strong{font-size:12px;font-weight:700;color:#203950}
+.workflow-review-row small{font-size:11px;color:#63778b}
+.workflow-review-row button{border:1px solid #b9c8d6;background:#fff;color:#203950;border-radius:5px;padding:8px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+.workflow-review-row button:not(:disabled):hover{background:#f1f5f8}
+@media(max-width:1024px){.workflow-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.workflow-form{grid-template-columns:1fr}.workflow-review-row{align-items:flex-start;flex-direction:column}}
