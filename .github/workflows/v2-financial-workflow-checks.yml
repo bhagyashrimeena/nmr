@@ -50,3 +50,47 @@ jobs:
         run: npm ci
       - name: Build TypeScript and Vite
         run: npm run build
+
+
+  specialist-browser:
+    runs-on: ubuntu-latest
+    env:
+      NMR_JWT_SECRET: test-secret-with-at-least-thirty-two-characters
+      NMR_ADMIN_PASSWORD: test-admin-password
+      NMR_DB_URL: sqlite:///./nmr_demo.db
+      NMR_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install provider and portal dependencies
+        run: |
+          cd backend && python -m pip install -r requirements.txt
+          cd ../frontend && npm ci
+      - name: Install browser and OS dependencies
+        run: cd frontend && npx playwright-core install --with-deps chromium
+      - name: Start provider API and portal
+        run: |
+          ( cd backend && nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/nmr-api.log 2>&1 & )
+          ( cd frontend && nohup npm run dev -- --host 127.0.0.1 > /tmp/nmr-portal.log 2>&1 & )
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null && curl -fsS http://127.0.0.1:5173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/nmr-api.log /tmp/nmr-portal.log
+          exit 1
+      - name: Verify five specialist workbenches and drilldowns
+        run: cd frontend && npm run smoke:workbenches
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nmr-specialist-workbench-screenshots
+          path: docs/screenshots/specialist/
+          if-no-files-found: ignore
