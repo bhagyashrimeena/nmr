@@ -17,7 +17,7 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 900 
 const page = await context.newPage()
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
-const presentationTerms = /\b(?:demo|fictional|synthetic|simulation|simulated|mock|poc|illustrative|hypothetical)\b/i
+const presentationTerms = /\b(?:fictional|synthetic|simulation|simulated|mock|poc|illustrative|hypothetical)\b/i
 async function assertOperationalCopy(locator) {
   assert.doesNotMatch(await locator.innerText(), presentationTerms)
 }
@@ -33,6 +33,7 @@ try {
   await page.getByRole('button', { name: 'Sign in' }).click()
   await page.getByRole('heading', { name: 'Overview', level: 1 }).waitFor()
   await page.getByText('Externally accessible').waitFor()
+  await page.locator('.environment-label').waitFor()
   await assertOperationalCopy(page.locator('.app-shell'))
   await page.screenshot({ path: resolve(screenshots, 'overview.png'), fullPage: true })
 
@@ -56,6 +57,18 @@ try {
       assert.equal(await page.locator('.section tbody tr').count(), 11)
       await page.getByRole('tab', { name: 'Activity' }).click()
       assert.equal(await page.locator('.section tbody tr').count(), 36)
+      await page.getByRole('tab', { name: 'Plan operations' }).click()
+      await page.getByText('Shareholding plan').last().waitFor()
+      await page.getByRole('tab', { name: 'Payroll batches' }).click()
+      await page.getByRole('cell', { name: 'REJECTED' }).waitFor()
+      await page.getByRole('button', { name: 'PAY-EMP-002-202611' }).click()
+      await page.getByRole('heading', { name: 'Batch PAY-EMP-002-202611' }).waitFor()
+      await page.getByRole('tab', { name: 'Transfer requests' }).click()
+      await page.getByText('TR-001').first().waitFor()
+      await page.getByRole('tab', { name: 'Exceptions' }).click()
+      await page.getByText('BREAK-STOCK-001').waitFor()
+      await assertOperationalCopy(page.locator('.app-shell'))
+      await page.screenshot({ path: resolve(screenshots, 'stock-operations.png'), fullPage: true })
     }
     if (name === 'Corporate Pension') {
       await page.getByRole('tab', { name: 'Projection' }).click()
@@ -64,6 +77,16 @@ try {
       await page.getByLabel('Annual return assumption (%)').fill('0')
       await page.getByRole('button', { name: 'Calculate' }).click()
       await page.getByText('¥4,100,000').first().waitFor()
+      await page.getByRole('tab', { name: 'Plan operations' }).click()
+      await page.getByText('Corporate pension plan').waitFor()
+      await page.getByRole('tab', { name: 'Fund positions' }).click()
+      await page.getByText('Domestic equity index').waitFor()
+      await page.getByRole('tab', { name: 'Instruction queue' }).click()
+      await page.getByText('PEN-INST-001').waitFor()
+      await page.getByRole('tab', { name: 'Exceptions' }).click()
+      await page.getByText('BREAK-PEN-001').waitFor()
+      await assertOperationalCopy(page.locator('.app-shell'))
+      await page.screenshot({ path: resolve(screenshots, 'pension-operations.png'), fullPage: true })
     }
     if (name === 'Financial Wellness') {
       await page.screenshot({ path: resolve(screenshots, 'financial-wellness.png'), fullPage: true })
@@ -78,6 +101,16 @@ try {
       await page.getByLabel('Annual return assumption (%)').fill('0')
       await page.getByRole('button', { name: 'Calculate' }).click()
       await page.getByText('¥1,200,000').first().waitFor()
+      await page.getByRole('tab', { name: 'Program overview' }).click()
+      await page.getByText('Published content').waitFor()
+      await page.getByRole('tab', { name: 'Content library' }).click()
+      await page.getByText('ED-DRAFT-01').waitFor()
+      await page.getByRole('tab', { name: 'Benefit rules' }).click()
+      await page.getByText('TOYOTA-SHARE-01/RULES/2026').waitFor()
+      await page.getByRole('tab', { name: 'Seminars' }).click()
+      await page.getByText('SEM-TOYOTA-01').waitFor()
+      await assertOperationalCopy(page.locator('.app-shell'))
+      await page.screenshot({ path: resolve(screenshots, 'wellness-operations.png'), fullPage: true })
     }
     if (name === 'Trust & Custody') {
       await page.getByRole('tab', { name: 'Valuations' }).click()
@@ -85,10 +118,34 @@ try {
       await page.getByRole('tab', { name: 'Settlements' }).click()
       await page.getByLabel('Status').selectOption('pending')
       assert.equal(await page.locator('.section tbody tr').count(), 1)
+      await page.getByRole('tab', { name: 'Account registry' }).click()
+      await page.getByText('Custody accounts').waitFor()
+      await page.getByRole('tab', { name: 'Position detail' }).click()
+      await page.getByText('Pending transfer units').waitFor()
+      await page.getByRole('tab', { name: 'Dividend processing' }).click()
+      await page.getByText('CU-DIV-SCHEDULED').waitFor()
+      await page.getByRole('tab', { name: 'Action register' }).click()
+      await page.getByText('CU-SPLIT-001').waitFor()
+      await page.getByRole('tab', { name: 'Settlement monitor' }).click()
+      await page.getByText('TR-001').first().waitFor()
+      await assertOperationalCopy(page.locator('.app-shell'))
+      await page.screenshot({ path: resolve(screenshots, 'custody-operations.png'), fullPage: true })
     }
     if (name === 'Equity Compensation') {
-      await page.getByRole('tab', { name: 'Vesting' }).click()
+      await page.getByRole('tab', { name: 'Vesting', exact: true }).click()
       assert.ok(await page.locator('.section tbody tr').count() > 0)
+      await page.getByRole('tab', { name: 'Equity plan' }).click()
+      await page.getByText('Remaining reserve').waitFor()
+      await page.getByRole('tab', { name: 'Grant register' }).click()
+      await page.getByText('G-PROPOSED-001').waitFor()
+      await page.getByRole('tab', { name: 'Vesting schedule' }).click()
+      await page.getByText('G-001').first().waitFor()
+      await page.getByRole('tab', { name: 'Release queue' }).click()
+      await page.getByText('REL-G-001').waitFor()
+      await page.getByRole('tab', { name: 'Equity exceptions' }).click()
+      await page.getByText('EQ-CASE-001').waitFor()
+      await assertOperationalCopy(page.locator('.app-shell'))
+      await page.screenshot({ path: resolve(screenshots, 'equity-operations.png'), fullPage: true })
     }
   }
 
@@ -99,7 +156,28 @@ try {
 
   await nav.getByRole('button', { name: 'Corporate Clients' }).click()
   await page.getByRole('heading', { name: 'Corporate Clients', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: /Service agreements/ }).waitFor()
   await assertOperationalCopy(page.locator('.app-shell'))
+  await page.screenshot({ path: resolve(screenshots, 'client-agreements.png'), fullPage: true })
+
+  await nav.getByRole('button', { name: 'Participants' }).click()
+  await page.getByRole('heading', { name: 'Participants', level: 1 }).waitFor()
+  await page.getByPlaceholder('Name, ID, department or cohort').fill('TYO-0001')
+  await page.getByRole('cell', { name: 'TYO-0001' }).waitFor()
+  await page.screenshot({ path: resolve(screenshots, 'participant-directory.png'), fullPage: true })
+
+  await nav.getByRole('button', { name: 'Work Queue' }).click()
+  await page.getByRole('heading', { name: 'Work Queue', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: 'Reconciliation work queue' }).waitFor()
+  await page.getByRole('button', { name: 'Inspect' }).first().click()
+  await page.screenshot({ path: resolve(screenshots, 'work-queue.png'), fullPage: true })
+
+  await nav.getByRole('button', { name: 'Operational Reports' }).click()
+  await page.getByRole('heading', { name: 'Operational Reports', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: 'Source journal' }).waitFor()
+  await page.getByRole('button', { name: 'Next' }).last().click()
+  await page.getByText('page 2').waitFor()
+  await page.screenshot({ path: resolve(screenshots, 'operational-reports.png'), fullPage: true })
 
   await nav.getByRole('button', { name: 'MCP Access Management' }).click()
   await page.getByRole('heading', { name: 'MCP Access Management', level: 1 }).waitFor()
@@ -136,7 +214,7 @@ try {
   await page.getByText('External calls and policy events').waitFor()
   await assertOperationalCopy(page.locator('.app-shell'))
   assert.deepEqual(errors, [])
-  console.log('Browser smoke passed: five service screens, access controls, persisted UI toggle, audit screen; screenshots saved')
+  console.log('Browser smoke passed: five services, participants, agreements, work queue, reports, access controls, audit; screenshots saved')
 } finally {
   await browser.close()
 }

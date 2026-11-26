@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from .catalog import SERVICES
 from .db import get_db
 from .models import AuditEvent, Employee, McpSetting, Tenant, TenantServiceSetting
+from .v2_models import OperationAudit, TenantOperationalStatus
 
 ISSUER = "nmr-demo"
 AUDIENCE = "nmr-workplace-api"
@@ -56,6 +57,11 @@ def read_claims(credentials: HTTPAuthorizationCredentials | None):
 def audit(db: Session, request: Request, *, actor: str, tenant_id: str | None, employee_id: str | None, service: str, outcome: str, reason: str):
     db.add(AuditEvent(request_id=request.state.request_id, actor=actor, tenant_id=tenant_id,
                       employee_id=employee_id, service=service, outcome=outcome, reason=reason))
+    if request.url.path.startswith("/api/v2/"):
+        db.add(OperationAudit(request_id=request.state.request_id, actor=actor, tenant_id=tenant_id,
+                              employee_id=employee_id, principal_scopes=getattr(request.state, "principal_scopes", ""),
+                              service=service, operation=getattr(request.state, "operation", request.method.lower()),
+                              outcome=outcome, reason=reason))
     db.commit()
 
 
@@ -69,11 +75,54 @@ def require_admin(write: bool = False):
     return dependency
 
 
-def require_client(service: str):
+def require_provider(service: str, write: bool = False):
+    """Provider administrators and tenant-scoped service operators only."""
+    if service not in SERVICES:
+        raise ValueError(f"Unknown provider service: {service}")
+
+    def dependency(tenant_id: str, request: Request, db: Session = Depends(get_db),
+                   credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        claims = read_claims(credentials)
+        request.state.principal_scopes = ",".join(claims.get("scopes") or [])
+        scopes = claims.get("scopes") or []
+        if claims.get("role") == "admin" and ("admin:write" if write else "admin:read") in scopes:
+            return claims
+        needed = f"ops:{service}:{'write' if write else 'read'}"
+        if (claims.get("role") == "operator" and claims.get("tenant_id") == tenant_id
+                and claims.get("sub", "").startswith("operator:") and needed in scopes):
+            return claims
+        audit(db, request, actor=claims.get("sub", "unknown"), tenant_id=tenant_id,
+              employee_id=None, service=service, outcome="denied", reason="INSUFFICIENT_PERMISSIONS")
+        raise ApiError(403, "INSUFFICIENT_PERMISSIONS", "Provider service permission is required.")
+
+    return dependency
+
+
+def require_corporate():
+    def dependency(tenant_id: str, request: Request, db: Session = Depends(get_db),
+                   credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        claims = read_claims(credentials)
+        request.state.principal_scopes = ",".join(claims.get("scopes") or [])
+        if (claims.get("role") != "corporate_admin" or claims.get("tenant_id") != tenant_id
+                or not claims.get("sub", "").startswith("corporate:")
+                or "plan:read" not in (claims.get("scopes") or [])):
+            audit(db, request, actor=claims.get("sub", "unknown"), tenant_id=tenant_id,
+                  employee_id=None, service="corporate_reporting", outcome="denied",
+                  reason="INSUFFICIENT_PERMISSIONS")
+            raise ApiError(403, "INSUFFICIENT_PERMISSIONS", "Corporate plan permission is required.")
+        return claims
+
+    return dependency
+
+
+def require_client(service: str, operation: str = "read"):
     if service not in SERVICES:
         raise ValueError(f"Unknown client service: {service}")
+    if operation not in {"read", "draft"}:
+        raise ValueError(f"Unknown client operation: {operation}")
 
     def dependency(request: Request, db: Session = Depends(get_db), credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        request.state.operation = operation
         try:
             claims = read_claims(credentials)
         except ApiError as exc:
@@ -83,18 +132,23 @@ def require_client(service: str):
         tenant_id = claims.get("tenant_id")
         employee_id = claims.get("employee_id")
         actor = claims.get("sub", "unknown")
+        request.state.principal_scopes = ",".join(claims.get("scopes") or [])
 
         def deny(code: str, message: str, status: int = 403):
             audit(db, request, actor=actor, tenant_id=tenant_id, employee_id=employee_id,
                   service=service, outcome="denied", reason=code)
             raise ApiError(status, code, message)
 
-        if claims.get("role") != "employee" or "read:finance" not in (claims.get("scopes") or []):
-            deny("INSUFFICIENT_PERMISSIONS", "Employee finance read permission is required.")
+        required = "read:finance" if operation == "read" else f"draft:{service}"
+        if claims.get("role") != "employee" or required not in (claims.get("scopes") or []):
+            deny("INSUFFICIENT_PERMISSIONS", "Employee permission for this operation is required.")
         if not isinstance(tenant_id, str) or not isinstance(employee_id, str) or actor != f"employee:{employee_id}":
             deny("RESOURCE_NOT_ACCESSIBLE", "Employee identity claims are inconsistent.")
         if not db.get(Tenant, tenant_id):
             deny("RESOURCE_NOT_ACCESSIBLE", "Tenant is not available.")
+        tenant_status = db.get(TenantOperationalStatus, tenant_id)
+        if not tenant_status or tenant_status.status != "ACTIVE":
+            deny("TENANT_INACTIVE", "The corporate client is not active.")
         setting = db.get(McpSetting, tenant_id)
         if not setting or not setting.enabled:
             deny("MCP_ACCESS_DISABLED", "External access is disabled for this client.")
