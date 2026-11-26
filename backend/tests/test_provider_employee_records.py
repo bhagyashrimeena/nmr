@@ -82,3 +82,21 @@ def test_source_record_enforces_provider_admin_role_and_tenant_isolation(demo):
     assert get_record(client, "EMP-001", "stock").status_code == 200
     assert client.get("/api/v2/client/me/shareholding/summary",
                       headers=auth(employee_token())).status_code == 403
+
+
+def test_v2_pension_projection_uses_reconciled_balance_and_admin_permissions(demo):
+    client, _ = demo
+    source = get_record(client, "EMP-001", "pension").json()
+    starting = int(Decimal(source["summary"]["balance_jpy"]))
+    url = (BASE + "/EMP-001/pension/retirement-projection"
+           "?years=1&monthly_jpy=0&annual_return_pct=0")
+    response = client.get(url, headers=auth(admin_token()))
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["source_version"] == "V2_LEDGER"
+    assert result["projection"]["starting_balance_jpy"] == starting
+    assert result["projection"]["illustrative_future_value_jpy"] == starting
+    assert result["assumptions"]["formula_id"] == "MONTH_END_COMPOUND_V1"
+    assert client.get(url, headers=auth(employee_token())).status_code == 403
+    assert client.get(url.replace("EMP-001", "SEC-001"),
+                      headers=auth(admin_token())).status_code == 404
