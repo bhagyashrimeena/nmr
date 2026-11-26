@@ -1,0 +1,41 @@
+.subtabs{display:flex;gap:4px;overflow:auto;border-bottom:1px solid #dce3ea;margin:22px 0 3px;padding:0 2px;white-space:nowrap}
+.subtabs button{border:0;border-bottom:3px solid transparent;background:transparent;color:#6b7b8d;padding:13px 16px;font-size:12px;font-weight:700}
+.subtabs button:hover{color:#213b59;background:#eef2f6}
+.subtabs button.selected{color:#a2384a;border-bottom-color:#a2384a}
+.subtabs+.metrics{margin-top:20px}
+.inline-filter{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:22px 0 14px;background:#fff;border:1px solid #dfe6ed;border-radius:5px;padding:15px 18px}
+.inline-filter label,.calculator label{display:flex;flex-direction:column;gap:7px;color:#687a8e;font-size:11px;font-weight:700}
+.inline-filter input,.inline-filter select,.calculator input,.audit-filter-group select{border:1px solid #d7e0e8;border-radius:5px;background:#fff;padding:10px 11px;min-width:175px;color:#263950;font-size:12px}
+.inline-filter button{border:1px solid #cfd9e2;background:#fff;color:#263950;border-radius:5px;padding:10px 12px;font-size:12px;font-weight:700}
+.inline-filter button:hover{background:#f2f5f8}
+.calculator{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:18px 0 24px;background:white;padding:21px;border:1px solid #dfe6ed;border-radius:5px}
+.calculator input{min-width:150px;width:175px}
+.calculator button{height:39px}
+.panel-note{border-top:1px solid #e9edf1;padding:14px 22px;color:#63758a;font-size:11px;line-height:1.5}
+.service-empty{background:#fff;border:1px solid #e0e6ec;border-radius:5px;margin-top:18px}
+.success{padding:12px 15px;background:#eaf5ef;border:1px solid #b9dfca;color:#286f49;border-radius:5px;margin-bottom:17px;font-size:12px}
+.access-summary{display:flex;justify-content:space-between;align-items:center;gap:18px;background:#f0f4f8;border:1px solid #dce6ef;border-radius:5px;padding:17px 20px;margin:18px 0}
+.access-summary strong{font-family:Manrope,sans-serif;color:#203950;font-size:14px;white-space:nowrap}
+.access-summary span{font-size:11px;color:#62758a;text-align:right}
+.service-access-list{display:grid;gap:11px}
+.service-access-row{background:#fff;border:1px solid #dfe6ed;border-radius:5px;padding:19px 22px;display:flex;align-items:center;justify-content:space-between;gap:22px}
+.service-access-row h3{font-family:Manrope,sans-serif;font-size:14px;margin:6px 0}
+.service-access-row p{font-size:11px;color:#66798c;margin:0 0 8px}
+.service-access-row code{font-size:10px;background:#f3f6f8;padding:5px 7px;color:#42596e;word-break:break-all}
+.service-access-row small{display:block;color:#8090a0;font-size:10px;margin-top:12px}
+.service-access-action{display:flex;flex-direction:column;align-items:end;gap:13px;min-width:190px}
+.service-access-action button{min-width:156px}
+.client-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.client-card{background:#fff;border:1px solid #dfe6ed;border-radius:5px;padding:23px}
+.client-card.current{border-top:4px solid #a2384a}
+.client-card h2{font-family:Manrope,sans-serif;font-size:16px;margin:10px 0 3px}
+.client-card p{font-size:11px;color:#8290a0;margin:0 0 17px}
+.client-card .status{display:inline-block;margin-bottom:17px}
+.client-card button{display:block;border:1px solid #cdd8e2;background:#fff;border-radius:5px;color:#243a52;font-size:11px;font-weight:700;padding:9px 12px}
+.resource .progress-button{margin-top:14px;border:1px solid #cad6e0;background:#fff;border-radius:5px;color:#253e58;font-size:11px;font-weight:700;padding:8px 11px}
+.resource .progress-button:hover{background:#eef3f7}
+.audit-filter-group{display:flex;gap:12px}
+.audit-filter-group label{font-size:11px;color:#697a8d;font-weight:700;display:flex;flex-direction:column;gap:7px}
+.allocation small{color:#718398;min-width:105px;text-align:right}
+@media(max-width:900px){.access-summary,.service-access-row{align-items:stretch;flex-direction:column}.access-summary span{text-align:left}.service-access-action{align-items:start}.client-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.calculator,.audit-filter-group{align-items:stretch;flex-direction:column}.inline-filter input,.inline-filter select,.calculator input,.audit-filter-group select{width:100%}.subtabs button{padding:11px}.service-access-row{padding:16px}.access-summary strong{white-space:normal}}

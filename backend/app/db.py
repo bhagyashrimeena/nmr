@@ -14,7 +14,7 @@ class Base(DeclarativeBase):
 
 def make_engine(url: str | None = None):
     db_url = url or os.getenv("NMR_DB_URL", "sqlite:///./nmr_demo.db")
-    return create_engine(db_url, connect_args={"check_same_thread": False} if db_url.startswith("sqlite") else {})
+    return create_engine(db_url, connect_args={"check_same_thread": False, "timeout": 30} if db_url.startswith("sqlite") else {})
 
 
 engine = make_engine()

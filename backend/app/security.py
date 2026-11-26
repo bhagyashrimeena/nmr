@@ -5,10 +5,12 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .catalog import SERVICES
 from .db import get_db
-from .models import AuditEvent, Employee, McpSetting, Tenant
+from .models import AuditEvent, Employee, McpSetting, Tenant, TenantServiceSetting
 
 ISSUER = "nmr-demo"
 AUDIENCE = "nmr-workplace-api"
@@ -42,12 +44,12 @@ def mint_token(*, sub: str, role: str, scopes: list[str], tenant_id: str | None 
 
 def read_claims(credentials: HTTPAuthorizationCredentials | None):
     if not credentials:
-        raise ApiError(401, "INVALID_TOKEN", "A bearer token is required.")
+        raise ApiError(401, "UNAUTHENTICATED", "A bearer token is required.")
     try:
         claims = jwt.decode(credentials.credentials, secret(), algorithms=["HS256"], issuer=ISSUER, audience=AUDIENCE,
                             options={"require": ["exp", "iat", "nbf", "iss", "aud", "sub"]})
     except jwt.PyJWTError:
-        raise ApiError(401, "INVALID_TOKEN", "The bearer token is invalid or expired.") from None
+        raise ApiError(401, "UNAUTHENTICATED", "The bearer token is invalid or expired.") from None
     return claims
 
 
@@ -61,15 +63,23 @@ def require_admin(write: bool = False):
     def dependency(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
         claims = read_claims(credentials)
         scope = "admin:write" if write else "admin:read"
-        if claims.get("role") != "admin" or scope not in claims.get("scopes", []):
-            raise ApiError(403, "FORBIDDEN", "Administrator permission is required.")
+        if claims.get("role") != "admin" or scope not in (claims.get("scopes") or []):
+            raise ApiError(403, "INSUFFICIENT_PERMISSIONS", "Administrator permission is required.")
         return claims
     return dependency
 
 
 def require_client(service: str):
+    if service not in SERVICES:
+        raise ValueError(f"Unknown client service: {service}")
+
     def dependency(request: Request, db: Session = Depends(get_db), credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
-        claims = read_claims(credentials)
+        try:
+            claims = read_claims(credentials)
+        except ApiError as exc:
+            audit(db, request, actor="anonymous", tenant_id=None, employee_id=None,
+                  service=service, outcome="denied", reason=exc.code)
+            raise
         tenant_id = claims.get("tenant_id")
         employee_id = claims.get("employee_id")
         actor = claims.get("sub", "unknown")
@@ -79,20 +89,24 @@ def require_client(service: str):
                   service=service, outcome="denied", reason=code)
             raise ApiError(status, code, message)
 
-        if claims.get("role") != "employee" or "read:finance" not in claims.get("scopes", []):
-            deny("FORBIDDEN", "Employee finance read permission is required.")
+        if claims.get("role") != "employee" or "read:finance" not in (claims.get("scopes") or []):
+            deny("INSUFFICIENT_PERMISSIONS", "Employee finance read permission is required.")
         if not isinstance(tenant_id, str) or not isinstance(employee_id, str) or actor != f"employee:{employee_id}":
-            deny("FORBIDDEN", "Employee identity claims are inconsistent.")
+            deny("RESOURCE_NOT_ACCESSIBLE", "Employee identity claims are inconsistent.")
         if not db.get(Tenant, tenant_id):
-            deny("FORBIDDEN", "Tenant is not available.")
+            deny("RESOURCE_NOT_ACCESSIBLE", "Tenant is not available.")
         setting = db.get(McpSetting, tenant_id)
         if not setting or not setting.enabled:
             deny("MCP_ACCESS_DISABLED", "External access is disabled for this client.")
+        service_setting = db.scalar(select(TenantServiceSetting).where(
+            TenantServiceSetting.tenant_id == tenant_id, TenantServiceSetting.service == service))
+        if not service_setting or not service_setting.enabled:
+            deny("SERVICE_ACCESS_DISABLED", f"External access to {SERVICES[service]['title']} is disabled for this client.")
         employee = db.get(Employee, employee_id)
         if not employee or employee.tenant_id != tenant_id or not employee.active:
-            deny("EMPLOYEE_NOT_FOUND", "Employee record is not available.", 404)
+            deny("RESOURCE_NOT_ACCESSIBLE", "Employee record is not available.")
         if service not in employee.allowed_services.split(","):
-            deny("SERVICE_FORBIDDEN", "This employee cannot access the service.")
+            deny("INSUFFICIENT_PERMISSIONS", "This employee cannot access the service.")
         return claims
     return dependency
 
