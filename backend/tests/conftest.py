@@ -5,6 +5,11 @@ from sqlalchemy.orm import Session
 from app.db import Base, get_db, make_engine
 from app.main import app
 from app.seed import seed
+from app.v2_seed import seed_v2
+from app.v2_pension_seed import seed_pension
+from app.v2_equity_seed import seed_equity
+from app.v2_custody_seed import seed_custody
+from app.v2_wellness_seed import seed_wellness
 from app.security import mint_token
 
 
@@ -16,6 +21,11 @@ def demo(tmp_path, monkeypatch):
     Base.metadata.create_all(engine)
     with Session(engine) as db:
         seed(db)
+        seed_v2(db)
+        seed_pension(db)
+        seed_equity(db)
+        seed_custody(db)
+        seed_wellness(db)
 
     def override_db():
         with Session(engine) as db:

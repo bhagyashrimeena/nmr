@@ -1,4 +1,9 @@
 import { useEffect, useState } from 'react'
+import StockOperations from './StockOperations'
+import PensionOperations from './PensionOperations'
+import EquityOperations from './EquityOperations'
+import CustodyOperations from './CustodyOperations'
+import WellnessOperations from './WellnessOperations'
 
 export type ServiceKey = 'stock' | 'pension' | 'wellness' | 'custody' | 'equity'
 type Request = (path: string, options?: RequestInit) => Promise<any>
@@ -21,12 +26,20 @@ function Panel({ title, note, children }: { title: string; note?: string; childr
 }
 
 const tabs: Record<ServiceKey, string[]> = {
-  stock: ['Overview', 'Contributions', 'Purchases', 'Activity', 'Statements'],
-  pension: ['Overview', 'Contributions', 'Valuations', 'Projection', 'Statements'],
-  wellness: ['Resources', 'Progress', 'Savings calculator'],
-  custody: ['Overview', 'Valuations', 'Dividends', 'Corporate actions', 'Settlements', 'Statements'],
-  equity: ['Awards', 'Vesting', 'Statements'],
+  stock: ['Overview', 'Contributions', 'Purchases', 'Activity', 'Statements',
+          'Plan operations', 'Members', 'Payroll batches', 'Purchase cycles', 'Transfer requests', 'Exceptions'],
+  pension: ['Overview', 'Contributions', 'Valuations', 'Projection', 'Statements',
+            'Plan operations', 'Participants', 'Fund positions', 'Investment funds',
+            'Instruction queue', 'Exceptions', 'Reports'],
+  wellness: ['Resources', 'Progress', 'Savings calculator', 'Program overview', 'Content library', 'Benefit rules', 'Seminars'],
+  custody: ['Overview', 'Valuations', 'Dividends', 'Corporate actions', 'Settlements', 'Statements', 'Account registry', 'Position detail', 'Dividend processing', 'Action register', 'Settlement monitor'],
+  equity: ['Awards', 'Vesting', 'Statements', 'Equity plan', 'Grant register', 'Vesting schedule', 'Release queue', 'Equity exceptions'],
 }
+const stockOperationsTabs = ['Plan operations', 'Members', 'Payroll batches', 'Purchase cycles', 'Transfer requests', 'Exceptions']
+const pensionOperationsTabs = ['Plan operations', 'Participants', 'Fund positions', 'Investment funds', 'Instruction queue', 'Exceptions', 'Reports']
+const equityOperationsTabs = ['Equity plan', 'Grant register', 'Vesting schedule', 'Release queue', 'Equity exceptions']
+const custodyOperationsTabs = ['Account registry', 'Position detail', 'Dividend processing', 'Action register', 'Settlement monitor']
+const wellnessOperationsTabs = ['Program overview', 'Content library', 'Benefit rules', 'Seminars']
 
 export default function ServiceViews({ page, summary, tenant, employee, request, onRefresh }: Props) {
   const [tab, setTab] = useState('')
@@ -83,6 +96,11 @@ export default function ServiceViews({ page, summary, tenant, employee, request,
   return <>
     <div className="subtabs" role="tablist" aria-label={`${page} views`}>{tabs[page].map(name => <button type="button" role="tab" aria-selected={active === name} className={active === name ? 'selected' : ''} key={name} onClick={() => { setTab(name); setProjection(null); setError('') }}>{name}</button>)}</div>
     {error && <div className="error" role="alert">{error}</div>}
+    {page === 'stock' && stockOperationsTabs.includes(active) && <StockOperations tab={active} tenant={tenant} request={request}/>}
+    {page === 'pension' && pensionOperationsTabs.includes(active) && <PensionOperations tab={active} tenant={tenant} employee={employee} request={request}/>}
+    {page === 'equity' && equityOperationsTabs.includes(active) && <EquityOperations tab={active} tenant={tenant} employee={employee} request={request}/>}
+    {page === 'custody' && custodyOperationsTabs.includes(active) && <CustodyOperations tab={active} tenant={tenant} employee={employee} request={request}/>}
+    {page === 'wellness' && wellnessOperationsTabs.includes(active) && <WellnessOperations tab={active} tenant={tenant} request={request}/>}
 
     {page === 'stock' && active === 'Overview' && <><Metrics entries={[
       { label: 'Shares held', value: `${data.shares_held} shares`, detail: data.plan_id },

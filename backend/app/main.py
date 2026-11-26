@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from .catalog import SERVICES as CATALOG
 from .db import Base, SessionLocal, engine, get_db
+from .migrations import migrate
 from .details import SERVICES, growth_projection, wellness_summary
 from .models import AccessChange, AuditEvent, Employee, McpSetting, Tenant, TenantServiceSetting, WellnessProgress, WellnessResource, utc_now
 from .schemas import (AccessChangeItem, AdminLogin, CustodyResponse, EquityResponse, ErrorResponse,
@@ -22,6 +23,16 @@ from .schemas import (AccessChangeItem, AdminLogin, CustodyResponse, EquityRespo
                       TokenResponse, WellnessProgressPatch, WellnessResponse)
 from .security import ApiError, audit, mint_token, require_admin, require_client, verify_admin_password
 from .seed import AS_OF, seed
+from .stock_v2 import router as stock_v2_router
+from .pension_v2 import router as pension_v2_router
+from .equity_v2 import router as equity_v2_router
+from .custody_v2 import router as custody_v2_router
+from .wellness_v2 import router as wellness_v2_router
+from .v2_seed import seed_v2
+from .v2_pension_seed import seed_pension
+from .v2_equity_seed import seed_equity
+from .v2_custody_seed import seed_custody
+from .v2_wellness_seed import seed_wellness
 
 logger = logging.getLogger("nmr.api")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -29,18 +40,28 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    Base.metadata.create_all(engine)
+    migrate(engine)
     with SessionLocal() as db:
         seed(db)
+        seed_v2(db)
+        seed_pension(db)
+        seed_equity(db)
+        seed_custody(db)
+        seed_wellness(db)
     yield
 
 
-app = FastAPI(title="NMR Workplace Finance Provider API", version="1.0.0",
-              description="Workplace finance account and access management API. Financial records are read-only.",
+app = FastAPI(title="NMR Workplace Finance Provider API", version="2.0.0",
+              description="Workplace finance accounts, service workflows, access management, and audit.",
               lifespan=lifespan)
+app.include_router(stock_v2_router)
+app.include_router(pension_v2_router)
+app.include_router(equity_v2_router)
+app.include_router(custody_v2_router)
+app.include_router(wellness_v2_router)
 origins = [x.strip() for x in os.getenv("NMR_CORS_ORIGINS", "http://localhost:5173").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False,
-                   allow_methods=["GET", "POST", "PATCH"], allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+                   allow_methods=["GET", "POST", "PATCH"], allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Idempotency-Key"],
                    expose_headers=["X-Request-ID"])
 
 
@@ -77,7 +98,7 @@ ERRORS = {401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}, 404: {"m
 
 @app.get("/health", tags=["System"])
 def health():
-    return {"status": "ok", "synthetic_demo": True}
+    return {"status": "ok"}
 
 
 @app.post("/api/v1/auth/admin-token", response_model=TokenResponse, tags=["Authentication"], responses=ERRORS)
@@ -180,7 +201,7 @@ def tenant_or_404(db: Session, tenant_id: str):
 @app.get("/api/v1/admin/tenants", tags=["Admin"], responses=ERRORS)
 def admin_tenants(db: Session = Depends(get_db), _claims: dict = Depends(require_admin())):
     tenants = db.scalars(select(Tenant).order_by(Tenant.id)).all()
-    return [{"id": t.id, "name": t.name, "fictional_demo_flag": t.fictional_demo_flag,
+    return [{"id": t.id, "name": t.name,
              "mcp_enabled": bool(db.get(McpSetting, t.id).enabled)} for t in tenants]
 
 
@@ -192,7 +213,7 @@ def admin_overview(tenant_id: str, db: Session = Depends(get_db), _claims: dict 
     recent = db.scalars(select(AuditEvent).where(AuditEvent.tenant_id == tenant_id).order_by(AuditEvent.id.desc()).limit(5)).all()
     service_settings = db.scalars(select(TenantServiceSetting).where(TenantServiceSetting.tenant_id == tenant_id)).all()
     configured = sum(item.enabled for item in service_settings)
-    return {"tenant_id": tenant.id, "name": tenant.name, "synthetic_demo": True, "as_of": AS_OF,
+    return {"tenant_id": tenant.id, "name": tenant.name, "as_of": AS_OF,
             "employee_count": count, "mcp_enabled": bool(setting and setting.enabled),
             "operational_service_count": len(CATALOG), "configured_enabled_services": configured,
             "effective_enabled_services": configured if setting and setting.enabled else 0,

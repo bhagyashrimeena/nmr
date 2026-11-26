@@ -2,10 +2,2175 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NMR Workplace Finance Provider API",
-    "description": "Workplace finance account and access management API. Financial records are read-only.",
-    "version": "1.0.0"
+    "description": "Workplace finance accounts, service workflows, access management, and audit.",
+    "version": "2.0.0"
   },
   "paths": {
+    "/api/v2/client/me/shareholding/summary": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Summary",
+        "operationId": "client_summary_api_v2_client_me_shareholding_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/shareholding/contributions": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Contributions",
+        "operationId": "client_contributions_api_v2_client_me_shareholding_contributions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/shareholding/purchases": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Purchases",
+        "operationId": "client_purchases_api_v2_client_me_shareholding_purchases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/shareholding/dividends": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Dividends",
+        "operationId": "client_dividends_api_v2_client_me_shareholding_dividends_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/shareholding/ledger": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Ledger",
+        "operationId": "client_ledger_api_v2_client_me_shareholding_ledger_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/shareholding/transfers/{request_id}": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Transfer",
+        "operationId": "client_transfer_api_v2_client_me_shareholding_transfers__request_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/shareholding/transfer-drafts": {
+      "post": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Client Transfer Draft",
+        "operationId": "client_transfer_draft_api_v2_client_me_shareholding_transfer_drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 80,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches": {
+      "post": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Receive Payroll",
+        "operationId": "admin_receive_payroll_api_v2_admin_tenants__tenant_id__shareholding_payroll_batches_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollBatchInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches/{batch_id}": {
+      "patch": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Review Payroll",
+        "operationId": "admin_review_payroll_api_v2_admin_tenants__tenant_id__shareholding_payroll_batches__batch_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/purchase-cycles": {
+      "post": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Create Purchase",
+        "operationId": "admin_create_purchase_api_v2_admin_tenants__tenant_id__shareholding_purchase_cycles_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseCycleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/purchase-cycles/{cycle_id}": {
+      "patch": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Review Purchase",
+        "operationId": "admin_review_purchase_api_v2_admin_tenants__tenant_id__shareholding_purchase_cycles__cycle_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "cycle_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cycle Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/transfers/{request_id}": {
+      "patch": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Review Transfer",
+        "operationId": "admin_review_transfer_api_v2_admin_tenants__tenant_id__shareholding_transfers__request_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/operations": {
+      "get": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Stock Operations",
+        "operationId": "admin_stock_operations_api_v2_admin_tenants__tenant_id__shareholding_operations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/pension/account": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Account",
+        "operationId": "client_account_api_v2_client_me_pension_account_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/pension/positions": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Positions",
+        "operationId": "client_positions_api_v2_client_me_pension_positions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/pension/contributions": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Contributions",
+        "operationId": "client_contributions_api_v2_client_me_pension_contributions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/pension/funds": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Funds",
+        "operationId": "client_funds_api_v2_client_me_pension_funds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/pension/allocation": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Allocation",
+        "operationId": "client_allocation_api_v2_client_me_pension_allocation_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/pension/projections": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Projections",
+        "operationId": "client_projections_api_v2_client_me_pension_projections_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 20,
+              "title": "Years"
+            }
+          },
+          {
+            "name": "monthly_jpy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 0,
+              "default": 35000,
+              "title": "Monthly Jpy"
+            }
+          },
+          {
+            "name": "annual_return_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 12.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "4",
+              "title": "Annual Return Pct"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/pension/instructions/{instruction_id}": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Instruction",
+        "operationId": "client_instruction_api_v2_client_me_pension_instructions__instruction_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "instruction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Instruction Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/pension/allocation-drafts": {
+      "post": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Allocation Draft",
+        "operationId": "client_allocation_draft_api_v2_client_me_pension_allocation_drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 80,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocationDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/pension/instructions/{instruction_id}": {
+      "patch": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Admin Review Instruction",
+        "operationId": "admin_review_instruction_api_v2_admin_tenants__tenant_id__pension_instructions__instruction_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "instruction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Instruction Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstructionReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/pension/operations": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Admin Pension Operations",
+        "operationId": "admin_pension_operations_api_v2_admin_tenants__tenant_id__pension_operations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/equity/grants": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Grants",
+        "operationId": "client_grants_api_v2_client_me_equity_grants_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/equity/grants/{grant_id}": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Grant",
+        "operationId": "client_grant_api_v2_client_me_equity_grants__grant_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/equity/vesting": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Vesting",
+        "operationId": "client_vesting_api_v2_client_me_equity_vesting_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/equity/options": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Options",
+        "operationId": "client_options_api_v2_client_me_equity_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/equity/releases": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Releases",
+        "operationId": "client_releases_api_v2_client_me_equity_releases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/equity/statement": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Statement",
+        "operationId": "client_statement_api_v2_client_me_equity_statement_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/equity/exercise-drafts": {
+      "post": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Client Exercise Draft",
+        "operationId": "client_exercise_draft_api_v2_client_me_equity_exercise_drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 80,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExerciseInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/equity/releases/{release_id}": {
+      "patch": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Review Release",
+        "operationId": "review_release_api_v2_admin_tenants__tenant_id__equity_releases__release_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Release Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/equity/grants/{grant_id}": {
+      "patch": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Review Grant",
+        "operationId": "review_grant_api_v2_admin_tenants__tenant_id__equity_grants__grant_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/equity/operations": {
+      "get": {
+        "tags": [
+          "Equity compensation v2"
+        ],
+        "summary": "Admin Equity Operations",
+        "operationId": "admin_equity_operations_api_v2_admin_tenants__tenant_id__equity_operations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/custody/positions": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client Positions",
+        "operationId": "client_positions_api_v2_client_me_custody_positions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/custody/history": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client History",
+        "operationId": "client_history_api_v2_client_me_custody_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/custody/dividends": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client Dividends",
+        "operationId": "client_dividends_api_v2_client_me_custody_dividends_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/custody/actions": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client Actions",
+        "operationId": "client_actions_api_v2_client_me_custody_actions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/custody/transfers": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client Transfers",
+        "operationId": "client_transfers_api_v2_client_me_custody_transfers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/custody/settlements": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client Settlements",
+        "operationId": "client_settlements_api_v2_client_me_custody_settlements_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/me/custody/statement": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Client Statement",
+        "operationId": "client_statement_api_v2_client_me_custody_statement_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/custody/actions/{action_id}": {
+      "patch": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Review Action",
+        "operationId": "review_action_api_v2_admin_tenants__tenant_id__custody_actions__action_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Action Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/custody/dividends/{dividend_id}": {
+      "patch": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Review Dividend",
+        "operationId": "review_dividend_api_v2_admin_tenants__tenant_id__custody_dividends__dividend_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "dividend_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dividend Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/custody/operations": {
+      "get": {
+        "tags": [
+          "Trust and custody v2"
+        ],
+        "summary": "Admin Custody Operations",
+        "operationId": "admin_custody_operations_api_v2_admin_tenants__tenant_id__custody_operations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/wellness/education": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Client Education",
+        "operationId": "client_education_api_v2_client_wellness_education_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/wellness/benefits/{benefit_key}": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Client Benefit",
+        "operationId": "client_benefit_api_v2_client_wellness_benefits__benefit_key__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "benefit_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Benefit Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/wellness/progress": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Client Progress",
+        "operationId": "client_progress_api_v2_client_wellness_progress_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/wellness/seminars": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Client Seminars",
+        "operationId": "client_seminars_api_v2_client_wellness_seminars_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v2/client/wellness/calculators/monthly-savings": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Client Savings",
+        "operationId": "client_savings_api_v2_client_wellness_calculators_monthly_savings_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "monthly_jpy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1000000.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "15000",
+              "title": "Monthly Jpy"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 480,
+              "minimum": 1,
+              "default": 120,
+              "title": "Months"
+            }
+          },
+          {
+            "name": "annual_rate_percent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 12.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "0",
+              "title": "Annual Rate Percent"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/wellness/content/{content_id}": {
+      "patch": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Review Content",
+        "operationId": "review_content_api_v2_admin_tenants__tenant_id__wellness_content__content_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "content_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Content Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/wellness/operations": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Admin Wellness Operations",
+        "operationId": "admin_wellness_operations_api_v2_admin_tenants__tenant_id__wellness_operations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -99,7 +2264,7 @@
     "/api/v1/client/me/stock-ownership": {
       "get": {
         "tags": [
-          "Client · Stock ownership"
+          "Client \u00b7 Stock ownership"
         ],
         "summary": "Client Stock",
         "operationId": "client_stock_api_v1_client_me_stock_ownership_get",
@@ -155,7 +2320,7 @@
     "/api/v1/client/me/pension": {
       "get": {
         "tags": [
-          "Client · Pension"
+          "Client \u00b7 Pension"
         ],
         "summary": "Client Pension",
         "operationId": "client_pension_api_v1_client_me_pension_get",
@@ -211,7 +2376,7 @@
     "/api/v1/client/wellness/resources": {
       "get": {
         "tags": [
-          "Client · Wellness"
+          "Client \u00b7 Wellness"
         ],
         "summary": "Client Wellness",
         "operationId": "client_wellness_api_v1_client_wellness_resources_get",
@@ -313,7 +2478,7 @@
     "/api/v1/client/me/custody": {
       "get": {
         "tags": [
-          "Client · Custody"
+          "Client \u00b7 Custody"
         ],
         "summary": "Client Custody",
         "operationId": "client_custody_api_v1_client_me_custody_get",
@@ -369,7 +2534,7 @@
     "/api/v1/client/me/equity-compensation": {
       "get": {
         "tags": [
-          "Client · Equity compensation"
+          "Client \u00b7 Equity compensation"
         ],
         "summary": "Client Equity",
         "operationId": "client_equity_api_v1_client_me_equity_compensation_get",
@@ -425,7 +2590,7 @@
     "/api/v1/client/wellness/savings-projection": {
       "get": {
         "tags": [
-          "Client · Wellness"
+          "Client \u00b7 Wellness"
         ],
         "summary": "Client Savings Projection",
         "operationId": "client_savings_projection_api_v1_client_wellness_savings_projection_get",
@@ -536,7 +2701,7 @@
     "/api/v1/client/me/pension/projection": {
       "get": {
         "tags": [
-          "Client · Pension"
+          "Client \u00b7 Pension"
         ],
         "summary": "Client Pension Projection",
         "operationId": "client_pension_projection_api_v1_client_me_pension_projection_get",
@@ -1982,6 +4147,48 @@
         ],
         "title": "Allocation"
       },
+      "AllocationDraft": {
+        "properties": {
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/AllocationLineInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Allocations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allocations"
+        ],
+        "title": "AllocationDraft"
+      },
+      "AllocationLineInput": {
+        "properties": {
+          "fund_id": {
+            "type": "string",
+            "title": "Fund Id"
+          },
+          "percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Percentage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fund_id",
+          "percentage"
+        ],
+        "title": "AllocationLineInput"
+      },
       "Contribution": {
         "properties": {
           "month": {
@@ -2445,6 +4652,25 @@
         ],
         "title": "ErrorResponse"
       },
+      "ExerciseInput": {
+        "properties": {
+          "grant_id": {
+            "type": "string",
+            "title": "Grant Id"
+          },
+          "units": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grant_id",
+          "units"
+        ],
+        "title": "ExerciseInput"
+      },
       "GrantItem": {
         "properties": {
           "id": {
@@ -2570,6 +4796,26 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InstructionReview": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "reason"
+        ],
+        "title": "InstructionReview"
+      },
       "McpPatch": {
         "properties": {
           "enabled": {
@@ -2636,6 +4882,85 @@
           "effective_service_count"
         ],
         "title": "McpResponse"
+      },
+      "PayrollBatchInput": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "format": "date",
+            "title": "Period"
+          },
+          "source_reference": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 5,
+            "title": "Source Reference"
+          },
+          "expected_jpy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Expected Jpy"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PayrollLineInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "source_reference",
+          "expected_jpy",
+          "lines"
+        ],
+        "title": "PayrollBatchInput"
+      },
+      "PayrollLineInput": {
+        "properties": {
+          "employee_id": {
+            "type": "string",
+            "title": "Employee Id"
+          },
+          "amount_jpy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount Jpy"
+          },
+          "incentive_jpy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Incentive Jpy",
+            "default": "0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "employee_id",
+          "amount_jpy"
+        ],
+        "title": "PayrollLineInput"
       },
       "PensionContributionItem": {
         "properties": {
@@ -2966,6 +5291,105 @@
         ],
         "title": "Purchase"
       },
+      "PurchaseAllocationInput": {
+        "properties": {
+          "employee_id": {
+            "type": "string",
+            "title": "Employee Id"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "employee_id",
+          "units"
+        ],
+        "title": "PurchaseAllocationInput"
+      },
+      "PurchaseCycleInput": {
+        "properties": {
+          "source_reference": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 5,
+            "title": "Source Reference"
+          },
+          "trade_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Trade Date"
+          },
+          "unit_price_jpy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Unit Price Jpy"
+          },
+          "acquired_units": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Acquired Units"
+          },
+          "allocations": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseAllocationInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Allocations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_reference",
+          "trade_date",
+          "unit_price_jpy",
+          "acquired_units",
+          "allocations"
+        ],
+        "title": "PurchaseCycleInput"
+      },
+      "ReviewInput": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "reason"
+        ],
+        "title": "ReviewInput"
+      },
       "ServiceAccess": {
         "properties": {
           "service": {
@@ -3059,6 +5483,26 @@
           "status"
         ],
         "title": "SettlementItem"
+      },
+      "StateInput": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "reason"
+        ],
+        "title": "StateInput"
       },
       "StockActivity": {
         "properties": {
@@ -3311,6 +5755,53 @@
           "expires_in"
         ],
         "title": "TokenResponse"
+      },
+      "TransferDraft": {
+        "properties": {
+          "units": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Units"
+          },
+          "recipient_account_reference": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 5,
+            "title": "Recipient Account Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "units",
+          "recipient_account_reference"
+        ],
+        "title": "TransferDraft"
+      },
+      "TransferReview": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "reason"
+        ],
+        "title": "TransferReview"
       },
       "ValidationError": {
         "properties": {
