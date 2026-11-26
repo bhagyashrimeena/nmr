@@ -89,7 +89,7 @@ function Stock({data,onNavigate,query}: {data:any;onNavigate:Props['onNavigate']
   const exceptions:any[] = data.exceptions || []
   const rows = batches.filter(x=>JSON.stringify(x).toLowerCase().includes(query))
   const [selected,setSelected] = useState('')
-  const chosen = batches.find(x=>x.id===selected) || rows[0]
+  const chosen = rows.find(x=>x.id===selected) || rows[0]
   const flagged = exceptions.filter(x=>x.status==='OPEN' || x.status==='INVESTIGATING')
   return <>
     <Kpis items={[
@@ -198,7 +198,7 @@ function Wellness({data,onNavigate,query}: {data:any;onNavigate:Props['onNavigat
   const review=content.filter(x=>x.state==='DRAFT'||x.state==='IN_REVIEW'||x.state==='APPROVED'||(x.state==='PUBLISHED'&&x.review_expires_on<data.as_of))
   const [selected,setSelected]=useState('')
   const visible=content.filter(x=>JSON.stringify(x).toLowerCase().includes(query))
-  const chosen=content.find(x=>x.id===selected)||visible[0]
+  const chosen=visible.find(x=>x.id===selected)||visible[0]
   return <>
     <div className="dw-editorial-head">
       <div><span className="dw-kicker">Employer learning programme</span>
@@ -248,7 +248,7 @@ function Custody({data,onNavigate,query}: {data:any;onNavigate:Props['onNavigate
   const pending=transfers.filter(x=>x.settlement_state!=='SETTLED_CONFIRMED')
   const [selected,setSelected]=useState('')
   const visible=transfers.filter(x=>JSON.stringify(x).toLowerCase().includes(query))
-  const chosen=transfers.find(x=>x.id===selected)||visible[0]
+  const chosen=visible.find(x=>x.id===selected)||visible[0]
   const openActions=actions.filter(x=>x.state!=='RECONCILED'&&x.state!=='CANCELLED')
   return <>
     <div className="dw-custody-strip" aria-label="Settlement status overview">
@@ -297,7 +297,7 @@ function Equity({data,onNavigate,query}: {data:any;onNavigate:Props['onNavigate'
   const [selected,setSelected]=useState('')
   const [kind,setKind]=useState('all')
   const visible=grants.filter(x=>(kind==='all'||x.award_type===kind)&&JSON.stringify(x).toLowerCase().includes(query))
-  const chosen=grants.find(x=>x.id===selected)||visible[0]
+  const chosen=visible.find(x=>x.id===selected)||visible[0]
   const reserve=Number(data.plan?.authorized_units||0),issued=Number(data.plan?.issued_units||0)
   const utilization=reserve?Math.min(100,100*issued/reserve):0
   const releaseQueue=releases.filter(x=>x.state!=='SIMULATED_RELEASED')
