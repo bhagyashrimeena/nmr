@@ -36,6 +36,7 @@ from .v2_wellness_seed import seed_wellness
 from .population_seed import seed_population, seed_service_agreements
 from .v2_models import ClientServiceAgreement, LegalEntity, ParticipantOperationalProfile
 from .provider_ops import router as provider_ops_router
+from .provider_employee_records import router as provider_employee_records_router
 
 logger = logging.getLogger("nmr.api")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -69,6 +70,7 @@ app.include_router(equity_v2_router)
 app.include_router(custody_v2_router)
 app.include_router(wellness_v2_router)
 app.include_router(provider_ops_router)
+app.include_router(provider_employee_records_router)
 origins = [x.strip() for x in os.getenv("NMR_CORS_ORIGINS", "http://localhost:5173").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False,
                    allow_methods=["GET", "POST", "PATCH"], allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Idempotency-Key"],

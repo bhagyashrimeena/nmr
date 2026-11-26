@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import StockWorkflowForms from './StockWorkflowForms'
 
 type Props = {
   tab: string
@@ -96,6 +97,14 @@ export default function StockOperations({ tab, tenant, request, onRefresh }: Pro
       </div></section>
     </>}
     {['Members', 'Payroll batches', 'Purchase cycles', 'Exceptions'].includes(tab) && <div className="inline-filter"><label>Search records<input value={search} onChange={e => setSearch(e.target.value)} placeholder="Reference, employee or status"/></label></div>}
+    {['Payroll batches', 'Purchase cycles'].includes(tab) && <StockWorkflowForms
+      key={tenant} tab={tab} tenant={tenant} asOf={String(data.as_of)} plan={data.plan}
+      members={data.members} payrollBatches={data.payroll_batches} purchaseCycles={data.purchase_cycles}
+      request={request} onSaved={async () => {
+        setData(await request('/api/v2/admin/tenants/' + tenant + '/shareholding/operations'))
+        await onRefresh()
+      }}
+    />}
     {tab === 'Members' && <Panel title="Member directory" note={filtered(data.members).length + ' shown'} columns={['Employee', 'Name', 'Joined', 'Status', 'Share units', 'Plan cash']} rows={filtered(data.members).map((row: any) => [row.employee_id, row.display_name, row.joined_on, row.status, Number(row.shares_held).toLocaleString(), amount(row.cash_jpy)])}/>}
     {tab === 'Payroll batches' && <><Panel title="Payroll collection" note={filtered(data.payroll_batches).length + ' shown'} columns={['Reference', 'Period', 'Expected', 'Received', 'Rejected lines', 'State']} rows={filtered(data.payroll_batches).map((row: any) => [<button type="button" onClick={() => inspectBatch(row.id)} disabled={Boolean(busy)}>{row.source_reference}</button>, row.period, amount(row.expected_jpy), amount(row.received_jpy), row.failed_lines, row.state])}/>{selectedBatch && <section className="section"><div className="section-heading"><h2>Batch {selectedBatch.id}</h2><span>{selectedBatch.state} · {selectedBatch.rule_source_reference || 'Earlier plan rule'}</span></div><div className="detail-grid"><div><span>Expected</span><strong>{amount(selectedBatch.expected_jpy)}</strong></div><div><span>Received</span><strong>{amount(selectedBatch.received_jpy)}</strong></div><div><span>Period</span><strong>{selectedBatch.period}</strong></div><div><span>Source reference</span><strong>{selectedBatch.source_reference}</strong></div></div><Table columns={['Employee', 'Contribution', 'Incentive', 'State', 'Reason']} rows={selectedBatch.lines.map((line: any) => [line.employee_id, amount(line.amount_jpy), amount(line.incentive_jpy), line.state, line.rejection_reason || '—'])}/><p className="panel-note">{selectedBatch.events.length} posted journal events · {selectedBatch.case_ids.length} reconciliation cases</p></section>}</>}
     {tab === 'Purchase cycles' && <Panel title="Purchase and allocation cycles" note={filtered(data.purchase_cycles).length + ' shown'} columns={['Reference', 'Trade date', 'Settlement', 'Unit price', 'Units', 'State']} rows={filtered(data.purchase_cycles).map((row: any) => [row.id, row.trade_date, row.settlement_date || 'Pending', amount(row.unit_price_jpy), Number(row.acquired_units).toLocaleString(), row.state])}/>}
