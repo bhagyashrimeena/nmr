@@ -200,6 +200,6 @@ export default function V2ParticipantRecord({page, tab, tenant, employee, reques
         <p className="panel-note">These are auditable award records, not an executed trade or a broker statement.</p>
       </section>}
     </>}
-    <p className="disclaimer">Source: V2 financial operations records. Quantities and amounts are fixed synthetic values; no live investment or financial execution is connected.</p>
+    <p className="panel-note">Source register: V2 operations · Record date {day(record.as_of)} · Financial values are not live market prices.</p>
   </>
 }
