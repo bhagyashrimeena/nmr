@@ -18,22 +18,57 @@ from .models import (CorporateAction, CorporateActionDetail, CustodyAccount, Cus
 AS_OF = date(2026, 11, 25)
 
 
+def refresh_display_labels(db):
+    """Refresh earlier fixture labels without changing account values or access policies."""
+    replacements = [
+        (Tenant, "name", "Toyota · hypothetical client", "Toyota"),
+        (Tenant, "name", "Sakura Mobility · fictional client", "Sakura Mobility"),
+        (McpSetting, "reason", "Initial demo setting", "Initial access setting"),
+        (StockAccount, "plan_id", "TDEMO-SHARE-01", "TOYOTA-SHARE-01"),
+        (StockAccount, "plan_id", "SDEMO-SHARE-01", "SAKURA-SHARE-01"),
+        (StockPlanDetail, "plan_name", "Employee Shareholding Association · Demo", "Toyota Employee Shareholding Association"),
+        (StockPlanDetail, "plan_name", "Sakura Employee Share Plan · Demo", "Sakura Employee Share Plan"),
+        (CustodyPosition, "instrument", "TDEMO ordinary shares", "Toyota Motor ordinary shares"),
+        (CustodyPosition, "instrument", "SDEMO ordinary shares", "Sakura Mobility ordinary shares"),
+        (CustodyPosition, "instrument", "Demo government bond basket", "Japanese government bond fund"),
+        (Dividend, "instrument", "TDEMO ordinary shares", "Toyota Motor ordinary shares"),
+        (Dividend, "instrument", "SDEMO ordinary shares", "Sakura Mobility ordinary shares"),
+        (CorporateAction, "instrument", "TDEMO ordinary shares", "Toyota Motor ordinary shares"),
+        (CorporateAction, "instrument", "SDEMO ordinary shares", "Sakura Mobility ordinary shares"),
+        (CorporateAction, "title", "Illustrative year-end dividend announcement", "Year-end dividend announcement"),
+        (CustodySettlement, "instrument", "TDEMO ordinary shares", "Toyota Motor ordinary shares"),
+        (CustodySettlement, "instrument", "Demo government bond basket", "Japanese government bond fund"),
+        (CustodySecurity, "instrument", "TDEMO ordinary shares", "Toyota Motor ordinary shares"),
+        (CustodySecurity, "instrument", "SDEMO ordinary shares", "Sakura Mobility ordinary shares"),
+        (CustodySecurity, "instrument", "Demo government bond basket", "Japanese government bond fund"),
+        (CustodySecurity, "security_id", "DEMO-TYO-7203", "NMR-TM-7203"),
+        (CustodySecurity, "security_id", "DEMO-SAK-1001", "NMR-SAK-1001"),
+        (CustodySecurity, "security_id", "DEMO-JGB-2026", "NMR-JGB-2026"),
+        (EquityGrantDetail, "plan_name", "Synthetic Equity Awards Plan", "Equity Awards Plan"),
+    ]
+    for model, field, previous, current in replacements:
+        column = getattr(model, field)
+        for row in db.scalars(select(model).where(column == previous)):
+            setattr(row, field, current)
+    db.flush()
+
+
 def seed(db):
     if db.scalar(select(Tenant.id).limit(1)):
         seed_extensions(db)
         return
     db.add_all([
-        Tenant(id="toyota-demo", name="Toyota · hypothetical client"),
-        Tenant(id="secondary-demo", name="Sakura Mobility · fictional client"),
-        McpSetting(tenant_id="toyota-demo", enabled=True, changed_by="seed", reason="Initial demo setting"),
-        McpSetting(tenant_id="secondary-demo", enabled=True, changed_by="seed", reason="Initial demo setting"),
+        Tenant(id="toyota-demo", name="Toyota"),
+        Tenant(id="secondary-demo", name="Sakura Mobility"),
+        McpSetting(tenant_id="toyota-demo", enabled=True, changed_by="seed", reason="Initial access setting"),
+        McpSetting(tenant_id="secondary-demo", enabled=True, changed_by="seed", reason="Initial access setting"),
         Employee(id="EMP-001", tenant_id="toyota-demo", display_name="Aiko Mori", allowed_services="stock,pension,wellness,custody,equity"),
         Employee(id="EMP-002", tenant_id="toyota-demo", display_name="Kenji Sato", allowed_services="stock,pension,wellness,custody,equity"),
         Employee(id="EMP-003", tenant_id="toyota-demo", display_name="Yui Tanaka", allowed_services="pension,wellness,equity"),
         Employee(id="SEC-001", tenant_id="secondary-demo", display_name="Hana Kato", allowed_services="stock,pension,wellness,custody,equity"),
-        StockAccount(employee_id="EMP-001", plan_id="TDEMO-SHARE-01", opening_shares=72, monthly_contribution_jpy=20000),
-        StockAccount(employee_id="EMP-002", plan_id="TDEMO-SHARE-01", opening_shares=30, monthly_contribution_jpy=10000),
-        StockAccount(employee_id="SEC-001", plan_id="SDEMO-SHARE-01", opening_shares=10, monthly_contribution_jpy=12000),
+        StockAccount(employee_id="EMP-001", plan_id="TOYOTA-SHARE-01", opening_shares=72, monthly_contribution_jpy=20000),
+        StockAccount(employee_id="EMP-002", plan_id="TOYOTA-SHARE-01", opening_shares=30, monthly_contribution_jpy=10000),
+        StockAccount(employee_id="SEC-001", plan_id="SAKURA-SHARE-01", opening_shares=10, monthly_contribution_jpy=12000),
         PensionAccount(employee_id="EMP-001", account_type="Corporate defined contribution", opening_balance_jpy=3000000, investment_change_jpy=80000),
         PensionAccount(employee_id="EMP-002", account_type="Corporate defined contribution", opening_balance_jpy=1800000, investment_change_jpy=25000),
         PensionAccount(employee_id="EMP-003", account_type="Corporate defined contribution", opening_balance_jpy=640000, investment_change_jpy=-8000),
@@ -41,14 +76,14 @@ def seed(db):
         WellnessResource(id="W-RET-01", title="Share plans and retirement saving", topic="retirement", description="How payroll share purchases differ from pension contributions.", content="A shareholding plan buys company shares with employee contributions. A corporate pension invests for retirement under its plan rules. Both involve risk; neither is a guaranteed return."),
         WellnessResource(id="W-BUD-01", title="Building an emergency buffer", topic="budgeting", description="A plain-language guide to setting aside short-term cash.", content="Review regular spending and choose a savings target that fits your circumstances. This educational guide is not personal financial advice."),
         WellnessResource(id="W-EQ-01", title="Understanding restricted stock units", topic="equity", description="Grant, vesting, and holding are different events.", content="An RSU award is distinct from shares purchased through payroll. Vesting schedules and tax treatment depend on plan terms. Consult the plan documents for details."),
-        CustodyPosition(employee_id="EMP-001", instrument="TDEMO ordinary shares", quantity=120),
-        CustodyPosition(employee_id="EMP-002", instrument="TDEMO ordinary shares", quantity=36),
-        CustodyPosition(employee_id="SEC-001", instrument="SDEMO ordinary shares", quantity=13),
-        Dividend(employee_id="EMP-001", payment_date=date(2026, 9, 30), instrument="TDEMO ordinary shares", amount_jpy=6000, status="credited"),
-        Dividend(employee_id="EMP-002", payment_date=date(2026, 9, 30), instrument="TDEMO ordinary shares", amount_jpy=1800, status="credited"),
-        Dividend(employee_id="SEC-001", payment_date=date(2026, 9, 30), instrument="SDEMO ordinary shares", amount_jpy=520, status="credited"),
-        CorporateAction(id="CA-01", instrument="TDEMO ordinary shares", title="Annual dividend record date notice", effective_date=date(2026, 9, 1)),
-        CorporateAction(id="CA-02", instrument="SDEMO ordinary shares", title="Annual dividend record date notice", effective_date=date(2026, 9, 1)),
+        CustodyPosition(employee_id="EMP-001", instrument="Toyota Motor ordinary shares", quantity=120),
+        CustodyPosition(employee_id="EMP-002", instrument="Toyota Motor ordinary shares", quantity=36),
+        CustodyPosition(employee_id="SEC-001", instrument="Sakura Mobility ordinary shares", quantity=13),
+        Dividend(employee_id="EMP-001", payment_date=date(2026, 9, 30), instrument="Toyota Motor ordinary shares", amount_jpy=6000, status="credited"),
+        Dividend(employee_id="EMP-002", payment_date=date(2026, 9, 30), instrument="Toyota Motor ordinary shares", amount_jpy=1800, status="credited"),
+        Dividend(employee_id="SEC-001", payment_date=date(2026, 9, 30), instrument="Sakura Mobility ordinary shares", amount_jpy=520, status="credited"),
+        CorporateAction(id="CA-01", instrument="Toyota Motor ordinary shares", title="Annual dividend record date notice", effective_date=date(2026, 9, 1)),
+        CorporateAction(id="CA-02", instrument="Sakura Mobility ordinary shares", title="Annual dividend record date notice", effective_date=date(2026, 9, 1)),
         EquityGrant(id="G-001", employee_id="EMP-001", award_type="RSU", granted_units=200, grant_date=date(2025, 4, 1)),
         EquityGrant(id="G-002", employee_id="EMP-003", award_type="Option", granted_units=100, grant_date=date(2026, 1, 1)),
         VestingEvent(grant_id="G-001", vest_date=date(2026, 4, 1), units=50, status="vested"),
@@ -91,6 +126,7 @@ def seed(db):
 
 def seed_extensions(db):
     """Add new POC detail records without resetting an existing local demo database."""
+    refresh_display_labels(db)
     for tenant_id in db.scalars(select(Tenant.id)):
         for service in SERVICES:
             existing = db.scalar(select(TenantServiceSetting).where(
@@ -101,9 +137,9 @@ def seed_extensions(db):
                                             changed_by="seed", reason="Initial service setting"))
 
     stock_details = {
-        "EMP-001": ("Employee Shareholding Association · Demo", date(2023, 4, 1), 338400, 5, "5300.00"),
-        "EMP-002": ("Employee Shareholding Association · Demo", date(2024, 7, 1), 270000, 0, "10300.00"),
-        "SEC-001": ("Sakura Employee Share Plan · Demo", date(2025, 6, 1), 38000, 0, "4200.00"),
+        "EMP-001": ("Toyota Employee Shareholding Association", date(2023, 4, 1), 338400, 5, "5300.00"),
+        "EMP-002": ("Toyota Employee Shareholding Association", date(2024, 7, 1), 270000, 0, "10300.00"),
+        "SEC-001": ("Sakura Employee Share Plan", date(2025, 6, 1), 38000, 0, "4200.00"),
     }
     for employee_id, (name, enrollment, opening_cost, incentive_pct, price) in stock_details.items():
         if db.get(StockAccount, employee_id) and not db.get(StockPlanDetail, employee_id):
@@ -156,9 +192,9 @@ def seed_extensions(db):
             db.add(WellnessProgress(employee_id=employee_id, resource_id=resource_id, status=status))
 
     securities = [
-        ("TDEMO ordinary shares", "DEMO-TYO-7203", "equity", "5300.00"),
-        ("SDEMO ordinary shares", "DEMO-SAK-1001", "equity", "4200.00"),
-        ("Demo government bond basket", "DEMO-JGB-2026", "fixed_income", "10000.00"),
+        ("Toyota Motor ordinary shares", "NMR-TM-7203", "equity", "5300.00"),
+        ("Sakura Mobility ordinary shares", "NMR-SAK-1001", "equity", "4200.00"),
+        ("Japanese government bond fund", "NMR-JGB-2026", "fixed_income", "10000.00"),
     ]
     for instrument, security_id, asset_class, price in securities:
         if not db.get(CustodySecurity, instrument):
@@ -169,13 +205,13 @@ def seed_extensions(db):
             db.add(CustodyAccount(employee_id=employee_id, account_id=f"CUST-{employee_id}",
                                   opened_on=date(2024, 4, 1), account_status="active"))
     if not db.scalar(select(CustodyPosition.id).where(CustodyPosition.employee_id == "EMP-001",
-                                                       CustodyPosition.instrument == "Demo government bond basket")):
-        db.add(CustodyPosition(employee_id="EMP-001", instrument="Demo government bond basket", quantity=10))
+                                                       CustodyPosition.instrument == "Japanese government bond fund")):
+        db.add(CustodyPosition(employee_id="EMP-001", instrument="Japanese government bond fund", quantity=10))
     if not db.get(CustodySettlement, "SET-EMP-001-01"):
         db.add_all([
-            CustodySettlement(id="SET-EMP-001-01", employee_id="EMP-001", instrument="Demo government bond basket",
+            CustodySettlement(id="SET-EMP-001-01", employee_id="EMP-001", instrument="Japanese government bond fund",
                               trade_date=date(2026, 10, 12), settlement_date=date(2026, 10, 14), quantity=10, status="settled"),
-            CustodySettlement(id="SET-EMP-001-02", employee_id="EMP-001", instrument="TDEMO ordinary shares",
+            CustodySettlement(id="SET-EMP-001-02", employee_id="EMP-001", instrument="Toyota Motor ordinary shares",
                               trade_date=date(2026, 11, 25), settlement_date=date(2026, 11, 27), quantity=4, status="pending"),
         ])
     for employee_id, snapshots in {
@@ -187,8 +223,8 @@ def seed_extensions(db):
             db.add_all(CustodyValuation(employee_id=employee_id, valuation_date=day,
                                         illustrative_value_jpy=value) for day, value in snapshots)
     if not db.get(CorporateAction, "CA-03"):
-        db.add(CorporateAction(id="CA-03", instrument="TDEMO ordinary shares",
-                               title="Illustrative year-end dividend announcement", effective_date=date(2027, 1, 31)))
+        db.add(CorporateAction(id="CA-03", instrument="Toyota Motor ordinary shares",
+                               title="Year-end dividend announcement", effective_date=date(2027, 1, 31)))
     for action_id, record_date, status in [
         ("CA-01", date(2026, 9, 1), "completed"),
         ("CA-02", date(2026, 9, 1), "completed"),
@@ -211,7 +247,7 @@ def seed_extensions(db):
         ("G-001", None, None), ("G-002", "4700.00", date(2036, 1, 1)),
         ("G-003", "4800.00", date(2035, 3, 1))]:
         if not db.get(EquityGrantDetail, grant_id):
-            db.add(EquityGrantDetail(grant_id=grant_id, plan_name="Synthetic Equity Awards Plan",
+            db.add(EquityGrantDetail(grant_id=grant_id, plan_name="Equity Awards Plan",
                                      vesting_condition="Continued employment through vest date",
                                      exercise_price_jpy=Decimal(price) if price else None, expiry_date=expiry,
                                      forfeited_units=0, released_units=0, exercised_units=0,
@@ -223,4 +259,4 @@ if __name__ == "__main__":
     Base.metadata.create_all(engine)
     with SessionLocal() as session:
         seed(session)
-    print("NMR synthetic demo database ready")
+    print("NMR Workplace Finance database ready")

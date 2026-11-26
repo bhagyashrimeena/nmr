@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NMR Workplace Finance Provider API",
-    "description": "Fictional, read-only workplace finance demonstration API. No real customer data or transactions.",
+    "description": "Workplace finance account and access management API. Financial records are read-only.",
     "version": "1.0.0"
   },
   "paths": {

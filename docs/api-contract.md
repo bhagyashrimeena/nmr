@@ -51,7 +51,7 @@ Example stock response for `EMP-001` (purchase history abbreviated):
   "employee_id": "EMP-001",
   "as_of": "2026-11-25",
   "currency": "JPY",
-  "plan_id": "TDEMO-SHARE-01",
+  "plan_id": "TOYOTA-SHARE-01",
   "shares_held": 120,
   "monthly_contribution_jpy": 20000,
   "total_contributions_jpy": 240000,

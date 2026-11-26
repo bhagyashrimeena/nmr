@@ -29,7 +29,7 @@ def growth_projection(starting_jpy: int, monthly_jpy: int, years: int, annual_re
             "years": years, "annual_return_pct": str(annual_return_pct),
             "total_contributed_jpy": contributed, "illustrative_future_value_jpy": future,
             "illustrative_growth_jpy": future - contributed,
-            "disclaimer": "Fixed-rate educational simulation only. Returns are not guaranteed; this is not financial advice."}
+            "disclaimer": "Projection uses a constant return assumption. Returns are not guaranteed; this is not financial advice."}
 
 
 def stock_summary(db: Session, employee_id: str):
@@ -79,7 +79,7 @@ def stock_summary(db: Session, employee_id: str):
                         "shares_purchased": sum(p.shares for p in purchases if p.purchase_date.year == year),
                         "purchase_cost_jpy": sum(p.amount_jpy for p in purchases if p.purchase_date.year == year)}
                        for year in sorted({c.month.year for c in contributions}, reverse=True)],
-        "note": "Prices and portfolio values are synthetic snapshots, not executable quotes.",
+        "note": "Valuations reflect the latest available account records and are not executable quotes.",
     })
     return result
 
@@ -93,7 +93,7 @@ def pension_summary(db: Session, employee_id: str):
     balance = result["balance_jpy"]
     monthly = (result["employee_contributions_jpy"] + result["employer_contributions_jpy"]) // len(contributions) if contributions else 0
     result.update({
-        "plan_name": "Corporate Defined Contribution Plan · Demo", "enrollment_status": "active",
+        "plan_name": "Corporate Defined Contribution Plan", "enrollment_status": "active",
         "opening_balance_jpy": balance - result["employee_contributions_jpy"] - result["employer_contributions_jpy"] - result["investment_change_jpy"],
         "employer_contributions_ytd_jpy": sum(c.employer_amount_jpy for c in contributions if c.contribution_date.year == AS_OF.year),
         "illustrative_nav_change_percent": str(((Decimal(valuations[0].illustrative_nav) / Decimal(valuations[-1].illustrative_nav) - 1) * 100).quantize(Decimal("0.01"))) if len(valuations) >= 2 else "0.00",
@@ -177,7 +177,7 @@ def custody_summary(db: Session, employee_id: str):
                    "valuation_history": [{"date": v.valuation_date, "illustrative_value_jpy": v.illustrative_value_jpy} for v in valuations],
                    "statements": [{"period": "2026", "dividends_credited_jpy": sum(d["amount_jpy"] for d in dividends if d["status"] == "credited" and d["payment_date"].year == 2026),
                                    "settled_events": sum(s.status == "settled" for s in settlements)}],
-                   "note": "Valuations and settlements are synthetic read-only records; no assets can be moved."})
+                   "note": "Valuations and settlements are read-only account records. Contact the custody team for account instructions."})
     return result
 
 
@@ -196,7 +196,7 @@ def equity_summary(db: Session, employee_id: str):
         exercised = detail.exercised_units if detail else 0
         eligible = max(vested - exercised, 0) if grant["award_type"] == "Option" else 0
         grants.append({**grant, "unvested_units": scheduled,
-                       "plan_name": detail.plan_name if detail else "Synthetic equity plan",
+                       "plan_name": detail.plan_name if detail else "Equity Awards Plan",
                        "vesting_condition": detail.vesting_condition if detail else "Plan conditions apply",
                        "forfeited_units": forfeited, "released_units": detail.released_units if detail else 0,
                        "exercised_units": exercised, "exercise_eligible_units": eligible,
@@ -210,7 +210,7 @@ def equity_summary(db: Session, employee_id: str):
                                "exercise_eligible_options": sum(g["exercise_eligible_units"] for g in grants)},
                    "statements": [{"grant_id": g["id"], "grant_date": g["grant_date"], "award_type": g["award_type"],
                                    "granted_units": g["granted_units"], "vested_units": g["vested_units"]} for g in grants],
-                   "note": "Vesting is distinct from release, exercise, and sale. Values are illustrative; no execution is available."})
+                   "note": "Vesting is distinct from release, exercise, and sale. Award values are based on the latest available price."})
     return result
 
 

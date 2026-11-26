@@ -10,7 +10,7 @@ def test_stock_and_custody_are_arithmetically_linked(demo):
         stock = stock_summary(db, "EMP-001")
         custody = custody_summary(db, "EMP-001")
         lots = db.query(SharePurchase).filter_by(employee_id="EMP-001").all()
-        position = db.query(CustodyPosition).filter_by(employee_id="EMP-001", instrument="TDEMO ordinary shares").one()
+        position = db.query(CustodyPosition).filter_by(employee_id="EMP-001", instrument="Toyota Motor ordinary shares").one()
         assert stock["shares_held"] == position.quantity == 120
         assert stock["total_contributions_jpy"] == sum(p.amount_jpy for p in lots) == 240000
         assert all(p.amount_jpy == p.shares * p.price_jpy for p in lots)

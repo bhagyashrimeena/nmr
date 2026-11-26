@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.details import growth_projection, stock_summary
-from app.models import AccessChange, McpSetting, TenantServiceSetting
+from app.models import AccessChange, CustodyPosition, CustodySecurity, McpSetting, StockPlanDetail, Tenant, TenantServiceSetting
 from app.seed import seed
 from conftest import admin_token, auth, employee_token
 
@@ -123,7 +123,7 @@ def test_detailed_stock_pension_custody_and_equity_reconcile(demo):
     assert custody["valuation_history"][0]["illustrative_value_jpy"] == custody["illustrative_portfolio_value_jpy"]
     assert custody["pending_corporate_actions"] == 1
     assert {s["status"] for s in custody["settlements"]} == {"settled", "pending"}
-    assert next(p for p in custody["positions"] if p["instrument"] == "TDEMO ordinary shares")["quantity"] == stock["shares_held"]
+    assert next(p for p in custody["positions"] if p["instrument"] == "Toyota Motor ordinary shares")["quantity"] == stock["shares_held"]
     equity = client.get(ROUTES["equity"], headers=employee).json()
     assert {g["award_type"] for g in equity["grants"]} == {"RSU", "Option"}
     assert equity["summary"]["exercise_eligible_options"] == 50
@@ -193,3 +193,22 @@ def test_seed_extension_is_idempotent(demo):
         before = db.query(TenantServiceSetting).count()
         seed(db)
         assert db.query(TenantServiceSetting).count() == before == 10
+
+
+def test_earlier_display_labels_refresh_without_resetting_access(demo):
+    _, engine = demo
+    with Session(engine) as db:
+        db.get(Tenant, "toyota-demo").name = "Toyota · hypothetical client"
+        db.get(StockPlanDetail, "EMP-001").plan_name = "Employee Shareholding Association · Demo"
+        db.get(CustodySecurity, "Toyota Motor ordinary shares").instrument = "TDEMO ordinary shares"
+        db.scalar(select(CustodyPosition).where(CustodyPosition.employee_id == "EMP-001",
+                                                CustodyPosition.instrument == "Toyota Motor ordinary shares")).instrument = "TDEMO ordinary shares"
+        db.get(McpSetting, "toyota-demo").enabled = False
+        db.commit()
+        before_positions = db.query(CustodyPosition).count()
+        seed(db)
+        assert db.get(Tenant, "toyota-demo").name == "Toyota"
+        assert db.get(StockPlanDetail, "EMP-001").plan_name == "Toyota Employee Shareholding Association"
+        assert db.get(CustodySecurity, "Toyota Motor ordinary shares")
+        assert db.query(CustodyPosition).count() == before_positions
+        assert db.get(McpSetting, "toyota-demo").enabled is False

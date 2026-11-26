@@ -32,7 +32,7 @@ class McpSetting(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     changed_by: Mapped[str] = mapped_column(String)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    reason: Mapped[str] = mapped_column(String, default="Initial demo setting")
+    reason: Mapped[str] = mapped_column(String, default="Initial access setting")
 
 
 class TenantServiceSetting(Base):
@@ -44,7 +44,7 @@ class TenantServiceSetting(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     changed_by: Mapped[str] = mapped_column(String)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    reason: Mapped[str] = mapped_column(String, default="Initial demo setting")
+    reason: Mapped[str] = mapped_column(String, default="Initial access setting")
 
 
 class AccessChange(Base):

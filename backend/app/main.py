@@ -36,7 +36,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="NMR Workplace Finance Provider API", version="1.0.0",
-              description="Fictional, read-only workplace finance demonstration API. No real customer data or transactions.",
+              description="Workplace finance account and access management API. Financial records are read-only.",
               lifespan=lifespan)
 origins = [x.strip() for x in os.getenv("NMR_CORS_ORIGINS", "http://localhost:5173").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False,

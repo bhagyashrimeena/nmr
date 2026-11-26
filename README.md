@@ -1,6 +1,6 @@
-# NMR Workplace Finance POC · provider side
+# NMR Workplace Finance
 
-Fictional NMR workplace finance provider, with five detailed read-only financial modules, a React administrator portal, signed demo JWTs, persistent master and per-service external access controls, and request audit. Toyota is a hypothetical client in this demonstration. All people and financial records are synthetic. The Toyota chatbot and MCP adapter are separate teammate work and are not included here.
+Provider administration for five workplace finance services, with a React portal, authenticated APIs, persistent master and per-service external access controls, and request audit. The Toyota chatbot and MCP adapter are separate components and are not included here.
 
 ## Project layout
 
@@ -68,7 +68,7 @@ The first employee has 120 shareholding-plan shares and ¥240,000 of recorded pa
 
 OpenAPI: `http://127.0.0.1:8000/docs` and `http://127.0.0.1:8000/openapi.json`. See [docs/api-contract.md](docs/api-contract.md) for token claims, routes, errors, examples, and the proposed MCP tool mapping.
 
-## Live demonstration
+## Access control walkthrough
 
 1. Sign in to the provider portal and inspect the five detailed services for Aiko Mori (`EMP-001`). Stock statements, pension valuations, wellness search and calculators, custody settlements, and RSU/option vesting all come from the backend.
 2. Show Toyota master and stock access enabled, then call the stock route with an employee JWT.

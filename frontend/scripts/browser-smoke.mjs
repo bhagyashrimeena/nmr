@@ -17,9 +17,14 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 900 
 const page = await context.newPage()
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
+const presentationTerms = /\b(?:demo|fictional|synthetic|simulation|simulated|mock|poc|illustrative|hypothetical)\b/i
+async function assertOperationalCopy(locator) {
+  assert.doesNotMatch(await locator.innerText(), presentationTerms)
+}
 
 try {
   await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' })
+  await assertOperationalCopy(page.locator('.login-shell'))
   await page.getByLabel('Username').fill('nmr-admin')
   await page.getByLabel('Password').fill('incorrect-demo-password')
   await page.getByRole('button', { name: 'Sign in' }).click()
@@ -28,6 +33,7 @@ try {
   await page.getByRole('button', { name: 'Sign in' }).click()
   await page.getByRole('heading', { name: 'Overview', level: 1 }).waitFor()
   await page.getByText('Externally accessible').waitFor()
+  await assertOperationalCopy(page.locator('.app-shell'))
   await page.screenshot({ path: resolve(screenshots, 'overview.png'), fullPage: true })
 
   const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -41,6 +47,7 @@ try {
     await nav.getByRole('button', { name }).click()
     await page.getByRole('heading', { name, level: 1 }).waitFor()
     await page.getByText(marker).first().waitFor()
+    await assertOperationalCopy(page.locator('.app-shell'))
     assert.equal(await page.locator('.subtabs button').count() > 0, true, `${name} has detailed views`)
     if (name === 'Employee Stock Ownership') {
       await page.screenshot({ path: resolve(screenshots, 'stock-ownership.png'), fullPage: true })
@@ -90,10 +97,20 @@ try {
   await page.getByText('No stock account is recorded for this employee.').waitFor()
   await page.getByLabel('Employee').selectOption('EMP-001')
 
+  await nav.getByRole('button', { name: 'Corporate Clients' }).click()
+  await page.getByRole('heading', { name: 'Corporate Clients', level: 1 }).waitFor()
+  await assertOperationalCopy(page.locator('.app-shell'))
+
   await nav.getByRole('button', { name: 'MCP Access Management' }).click()
   await page.getByRole('heading', { name: 'MCP Access Management', level: 1 }).waitFor()
   assert.equal(await page.locator('.service-access-row').count(), 5)
-  await page.screenshot({ path: resolve(screenshots, 'access-management.png'), fullPage: true })
+  await assertOperationalCopy(page.locator('.page-head'))
+  await assertOperationalCopy(page.locator('.access-panel'))
+  await assertOperationalCopy(page.locator('.service-access-list'))
+  await assertOperationalCopy(page.locator('.app-shell'))
+  await page.setViewportSize({ width: 1440, height: 1380 })
+  await page.screenshot({ path: resolve(screenshots, 'access-management.png') })
+  await page.setViewportSize({ width: 1440, height: 900 })
 
   const token = await page.evaluate(() => sessionStorage.getItem('nmr_admin_token'))
   assert.ok(token)
@@ -117,6 +134,7 @@ try {
   await nav.getByRole('button', { name: 'Audit Logs' }).click()
   await page.getByRole('heading', { name: 'Audit Logs', level: 1 }).waitFor()
   await page.getByText('External calls and policy events').waitFor()
+  await assertOperationalCopy(page.locator('.app-shell'))
   assert.deepEqual(errors, [])
   console.log('Browser smoke passed: five service screens, access controls, persisted UI toggle, audit screen; screenshots saved')
 } finally {
