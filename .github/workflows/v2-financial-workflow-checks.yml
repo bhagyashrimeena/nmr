@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - feat/v2-financial-workflow-hardening
+      - feat/five-specialist-workbenches
   pull_request:
     branches:
       - feat/workplace-finance-v2
+      - feat/v2-financial-workflow-hardening
 
 permissions:
   contents: read
