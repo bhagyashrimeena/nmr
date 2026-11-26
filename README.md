@@ -9,6 +9,7 @@ Provider administration for five workplace finance services. The React portal co
 - `frontend/`: React and TypeScript provider portal.
 - `docs/v2-api-contract.md`: V2 external handoff and workflow contract.
 - `docs/v2-implementation-status.md`: architecture, completed milestones, and remaining work.
+- `docs/verification-report.md`: source-backed business scenarios, screenshots, verification results, and current limits.
 - `docs/api-contract.md`: original V1 contract.
 - `docs/openapi.json`: exported OpenAPI specification for both API versions.
 
@@ -27,7 +28,7 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Startup creates additive V2 tables and loads repeatable service records without resetting existing access settings. The default SQLite file is `backend/nmr_demo.db`. If compiled SQLAlchemy extensions are blocked by Windows policy, set `$env:DISABLE_SQLALCHEMY_CEXT='1'` and reinstall SQLAlchemy with `--no-binary SQLAlchemy`.
+Startup creates additive schema tables and loads repeatable service records without resetting existing access settings. It creates three client relationships and 256 participant records. The default SQLite file is `backend/nmr_demo.db`. If compiled SQLAlchemy extensions are blocked by Windows policy, set `$env:DISABLE_SQLALCHEMY_CEXT='1'` and reinstall SQLAlchemy with `--no-binary SQLAlchemy`.
 
 In another terminal:
 
@@ -49,9 +50,11 @@ The five service areas have detailed records and operator views:
 - Trust and custody: account inventory, corporate actions, dividend entitlement and cash, and linked transfer status.
 - Financial wellness: approved education, tenant benefit rules, seminars, and a reproducible savings calculator.
 
+The portal also has a searchable participant directory, client service agreements, a cross-service work queue, and dated operational reports. Stock operations can inspect rejected payroll lines and post an evidenced correction into a separate batch. The source batch and its resolution history remain visible. Provider operators can be scoped to one tenant and service; corporate plan administrators have an aggregate-only reporting route.
+
 MCP Access Management stores one master and five service switches per tenant. New external calls are checked against both switches and employee permissions. Admin browsing stays available when external access is off. V1 routes remain available; V2 routes use `/api/v2` and are described in [the V2 contract](docs/v2-api-contract.md). OpenAPI is served at `/docs` and `/openapi.json`.
 
-The Toyota records use employee IDs `EMP-001`, `EMP-002`, and `EMP-003`; `SEC-001` belongs to the separate Sakura tenant. V2 records are fixed as of 26 November 2026. The original summary records use 25 November 2026.
+The Toyota records include `EMP-001`, `EMP-002`, and `EMP-003`; `SEC-001` belongs to Sakura Mobility. Additional participant IDs begin `TYO-`, `SAK-`, and `AST-` for Toyota, Sakura Mobility, and Asterfield Industries. V2 records are fixed as of 26 November 2026. The original summary records use 25 November 2026.
 
 ## Verify
 

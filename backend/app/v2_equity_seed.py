@@ -4,14 +4,17 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Employee, EquityGrant, EquityGrantDetail, VestingEvent
+from .models import Employee, EquityGrant, EquityGrantDetail, Tenant, VestingEvent
 from .v2_models import EquityAward, EquityPlanV2, EquityRelease, EquityTranche, OperationalStatement, ReconciliationCase
 
 
 def seed_equity(db: Session):
     plans = {"toyota-demo": ("EQ-TOYOTA", "Toyota Equity Awards Plan", 10000),
-             "secondary-demo": ("EQ-SAKURA", "Sakura Equity Awards Plan", 2000)}
+             "secondary-demo": ("EQ-SAKURA", "Sakura Equity Awards Plan", 2000),
+             "asterfield": ("EQ-ASTER", "Asterfield Equity Awards Plan", 8000)}
     for tenant_id, (plan_id, name, reserve) in plans.items():
+        if not db.get(Tenant, tenant_id):
+            continue
         if not db.get(EquityPlanV2, plan_id):
             db.add(EquityPlanV2(id=plan_id, tenant_id=tenant_id, name=name,
                                 authorized_units=reserve, acceptance_required=False, status="ACTIVE"))

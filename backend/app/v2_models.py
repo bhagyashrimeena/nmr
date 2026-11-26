@@ -28,6 +28,27 @@ class TenantOperationalStatus(Base):
     status: Mapped[str] = mapped_column(String)
 
 
+class ClientServiceAgreement(Base):
+    __tablename__ = "client_service_agreements"
+    __table_args__ = (UniqueConstraint("tenant_id", "service"),)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    legal_entity_id: Mapped[str] = mapped_column(ForeignKey("legal_entities.id"))
+    service: Mapped[str] = mapped_column(String)
+    effective_on: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String)
+    source_reference: Mapped[str] = mapped_column(String)
+
+
+class ParticipantOperationalProfile(Base):
+    __tablename__ = "participant_operational_profiles"
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), primary_key=True)
+    department: Mapped[str] = mapped_column(String)
+    cohort: Mapped[str] = mapped_column(String)
+    hired_on: Mapped[date] = mapped_column(Date)
+    left_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
 class EmployeeProfile(Base):
     __tablename__ = "employee_profiles"
     employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), primary_key=True)
@@ -92,6 +113,17 @@ class ReconciliationCase(Base):
     owner: Mapped[str] = mapped_column(String)
     resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class CaseResolution(Base):
+    __tablename__ = "case_resolutions"
+    case_id: Mapped[str] = mapped_column(ForeignKey("reconciliation_cases.id"), primary_key=True)
+    action: Mapped[str] = mapped_column(String)
+    evidence_reference: Mapped[str] = mapped_column(String)
+    related_batch_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    reason: Mapped[str] = mapped_column(Text)
+    actor: Mapped[str] = mapped_column(String)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
 class WorkflowTask(Base):

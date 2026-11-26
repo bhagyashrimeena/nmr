@@ -5,11 +5,11 @@ from .db import Base, engine
 from . import v2_models  # noqa: F401 - register the v2 tables with metadata
 from .v2_models import SchemaMigration
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def migrate(target_engine=engine):
-    # V2 only adds tables; existing v1 records and access settings are retained.
+    # All schema additions are tables; existing records and access settings are retained.
     Base.metadata.create_all(target_engine)
     with Session(target_engine) as db:
         if not db.get(SchemaMigration, SCHEMA_VERSION):

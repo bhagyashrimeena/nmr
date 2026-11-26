@@ -320,13 +320,13 @@
         }
       }
     },
-    "/api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches": {
-      "post": {
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches/{batch_id}": {
+      "get": {
         "tags": [
           "Shareholding operations"
         ],
-        "summary": "Admin Receive Payroll",
-        "operationId": "admin_receive_payroll_api_v2_admin_tenants__tenant_id__shareholding_payroll_batches_post",
+        "summary": "Admin Payroll Detail",
+        "operationId": "admin_payroll_detail_api_v2_admin_tenants__tenant_id__shareholding_payroll_batches__batch_id__get",
         "security": [
           {
             "HTTPBearer": []
@@ -341,20 +341,19 @@
               "type": "string",
               "title": "Tenant Id"
             }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PayrollBatchInput"
-              }
+          },
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
             }
           }
-        },
+        ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -373,9 +372,7 @@
             }
           }
         }
-      }
-    },
-    "/api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches/{batch_id}": {
+      },
       "patch": {
         "tags": [
           "Shareholding operations"
@@ -419,6 +416,125 @@
         },
         "responses": {
           "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/cases/{case_id}/correct-payroll": {
+      "post": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Correct Payroll",
+        "operationId": "admin_correct_payroll_api_v2_admin_tenants__tenant_id__shareholding_cases__case_id__correct_payroll_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollCorrectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches": {
+      "post": {
+        "tags": [
+          "Shareholding operations"
+        ],
+        "summary": "Admin Receive Payroll",
+        "operationId": "admin_receive_payroll_api_v2_admin_tenants__tenant_id__shareholding_payroll_batches_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollBatchInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -2297,6 +2413,342 @@
         }
       }
     },
+    "/api/v2/admin/tenants/{tenant_id}/work-queue": {
+      "get": {
+        "tags": [
+          "Provider operations"
+        ],
+        "summary": "Work Queue",
+        "operationId": "work_queue_api_v2_admin_tenants__tenant_id__work_queue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/cases/{case_id}": {
+      "patch": {
+        "tags": [
+          "Provider operations"
+        ],
+        "summary": "Review Case",
+        "operationId": "review_case_api_v2_admin_tenants__tenant_id__cases__case_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/reports/service/{service}": {
+      "get": {
+        "tags": [
+          "Provider operations"
+        ],
+        "summary": "Service Report",
+        "operationId": "service_report_api_v2_admin_tenants__tenant_id__reports_service__service__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "service",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Service"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "default": "2026-11-26",
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/reports/service/{service}/sources": {
+      "get": {
+        "tags": [
+          "Provider operations"
+        ],
+        "summary": "Service Report Sources",
+        "operationId": "service_report_sources_api_v2_admin_tenants__tenant_id__reports_service__service__sources_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "service",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Service"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "default": "2026-11-26",
+              "title": "As Of"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/reports/participants/{employee_id}": {
+      "get": {
+        "tags": [
+          "Provider operations"
+        ],
+        "summary": "Participant Report",
+        "operationId": "participant_report_api_v2_admin_tenants__tenant_id__reports_participants__employee_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "service",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Service"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "default": "2026-11-26",
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -3131,6 +3583,96 @@
               }
             },
             "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/tenants/{tenant_id}/agreements": {
+      "get": {
+        "tags": [
+          "Client agreements"
+        ],
+        "summary": "Admin Agreements",
+        "operationId": "admin_agreements_api_v2_admin_tenants__tenant_id__agreements_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/corporate/tenants/{tenant_id}/aggregate": {
+      "get": {
+        "tags": [
+          "Corporate plan reporting"
+        ],
+        "summary": "Corporate Aggregate",
+        "operationId": "corporate_aggregate_api_v2_corporate_tenants__tenant_id__aggregate_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -4315,6 +4857,39 @@
         ],
         "title": "AllocationLineInput"
       },
+      "CaseAction": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Reason"
+          },
+          "evidence_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "reason"
+        ],
+        "title": "CaseAction"
+      },
       "Contribution": {
         "properties": {
           "month": {
@@ -5050,6 +5625,28 @@
           "lines"
         ],
         "title": "PayrollBatchInput"
+      },
+      "PayrollCorrectionInput": {
+        "properties": {
+          "evidence_reference": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 8,
+            "title": "Evidence Reference"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evidence_reference",
+          "reason"
+        ],
+        "title": "PayrollCorrectionInput"
       },
       "PayrollLineInput": {
         "properties": {

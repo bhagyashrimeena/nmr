@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from .db import get_db
 from .models import Employee, TenantServiceSetting, WellnessProgress
-from .security import ApiError, audit, require_admin, require_client
+from .security import ApiError, audit, require_client, require_provider
 from .v2_models import WellnessBenefitAccess, WellnessBenefitRule, WellnessContentV2, WellnessSeminar
 
 router = APIRouter(prefix="/api/v2", tags=["Financial wellness v2"])
@@ -142,7 +142,7 @@ class ReviewInput(BaseModel):
 
 @router.patch("/admin/tenants/{tenant_id}/wellness/content/{content_id}")
 def review_content(tenant_id: str, content_id: str, body: ReviewInput, request: Request,
-                   db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                   db: Session = Depends(get_db), claims: dict = Depends(require_provider("wellness", write=True))):
     row = db.get(WellnessContentV2, content_id)
     if not row or row.tenant_id != tenant_id:
         raise ApiError(404, "RESOURCE_NOT_FOUND", "Content item is not available.")
@@ -160,7 +160,7 @@ def review_content(tenant_id: str, content_id: str, body: ReviewInput, request: 
 
 @router.get("/admin/tenants/{tenant_id}/wellness/operations")
 def admin_wellness_operations(tenant_id: str, request: Request, db: Session = Depends(get_db),
-                              claims: dict = Depends(require_admin())):
+                              claims: dict = Depends(require_provider("wellness"))):
     items = list(db.scalars(select(WellnessContentV2).where(WellnessContentV2.tenant_id == tenant_id)))
     rules = list(db.scalars(select(WellnessBenefitRule).where(WellnessBenefitRule.tenant_id == tenant_id)))
     seminars = list(db.scalars(select(WellnessSeminar).where(WellnessSeminar.tenant_id == tenant_id)))

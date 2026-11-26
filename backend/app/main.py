@@ -21,9 +21,9 @@ from .models import AccessChange, AuditEvent, Employee, McpSetting, Tenant, Tena
 from .schemas import (AccessChangeItem, AdminLogin, CustodyResponse, EquityResponse, ErrorResponse,
                       McpPatch, McpResponse, PensionResponse, ProjectionResponse, StockResponse,
                       TokenResponse, WellnessProgressPatch, WellnessResponse)
-from .security import ApiError, audit, mint_token, require_admin, require_client, verify_admin_password
+from .security import ApiError, audit, mint_token, require_admin, require_client, require_corporate, verify_admin_password
 from .seed import AS_OF, seed
-from .stock_v2 import router as stock_v2_router
+from .stock_v2 import router as stock_v2_router, stock_summary as operational_stock_summary
 from .pension_v2 import router as pension_v2_router
 from .equity_v2 import router as equity_v2_router
 from .custody_v2 import router as custody_v2_router
@@ -33,6 +33,9 @@ from .v2_pension_seed import seed_pension
 from .v2_equity_seed import seed_equity
 from .v2_custody_seed import seed_custody
 from .v2_wellness_seed import seed_wellness
+from .population_seed import seed_population, seed_service_agreements
+from .v2_models import ClientServiceAgreement, LegalEntity, ParticipantOperationalProfile
+from .provider_ops import router as provider_ops_router
 
 logger = logging.getLogger("nmr.api")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -40,10 +43,16 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    if get_db in _app.dependency_overrides:
+        # The test harness seeds its isolated database before opening TestClient.
+        yield
+        return
     migrate(engine)
     with SessionLocal() as db:
         seed(db)
+        seed_population(db)
         seed_v2(db)
+        seed_service_agreements(db)
         seed_pension(db)
         seed_equity(db)
         seed_custody(db)
@@ -59,6 +68,7 @@ app.include_router(pension_v2_router)
 app.include_router(equity_v2_router)
 app.include_router(custody_v2_router)
 app.include_router(wellness_v2_router)
+app.include_router(provider_ops_router)
 origins = [x.strip() for x in os.getenv("NMR_CORS_ORIGINS", "http://localhost:5173").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False,
                    allow_methods=["GET", "POST", "PATCH"], allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Idempotency-Key"],
@@ -225,7 +235,45 @@ def admin_employees(tenant_id: str, db: Session = Depends(get_db), _claims: dict
     tenant_or_404(db, tenant_id)
     employees = db.scalars(select(Employee).where(Employee.tenant_id == tenant_id).order_by(Employee.id)).all()
     return [{"id": e.id, "display_name": e.display_name, "active": e.active,
-             "allowed_services": e.allowed_services.split(",")} for e in employees]
+             "allowed_services": e.allowed_services.split(","),
+             "department": profile.department if (profile := db.get(ParticipantOperationalProfile, e.id)) else None,
+             "cohort": profile.cohort if profile else None,
+             "hired_on": profile.hired_on if profile else None,
+             "left_on": profile.left_on if profile else None} for e in employees]
+
+
+@app.get("/api/v2/admin/tenants/{tenant_id}/agreements", tags=["Client agreements"])
+def admin_agreements(tenant_id: str, request: Request, db: Session = Depends(get_db),
+                     claims: dict = Depends(require_admin())):
+    tenant_or_404(db, tenant_id)
+    rows = db.scalars(select(ClientServiceAgreement).where(
+        ClientServiceAgreement.tenant_id == tenant_id).order_by(ClientServiceAgreement.service)).all()
+    result = {"tenant_id": tenant_id, "agreements": [
+        {"id": row.id, "service": row.service, "status": row.status,
+         "legal_entity": db.get(LegalEntity, row.legal_entity_id).name,
+         "effective_on": row.effective_on, "source_reference": row.source_reference}
+        for row in rows]}
+    audit(db, request, actor=claims["sub"], tenant_id=tenant_id, employee_id=None,
+          service="client_agreements", outcome="permitted", reason="OK")
+    return result
+
+
+@app.get("/api/v2/corporate/tenants/{tenant_id}/aggregate", tags=["Corporate plan reporting"])
+def corporate_aggregate(tenant_id: str, request: Request, db: Session = Depends(get_db),
+                        claims: dict = Depends(require_corporate())):
+    tenant_or_404(db, tenant_id)
+    employees = db.scalars(select(Employee).where(Employee.tenant_id == tenant_id)).all()
+    agreements = db.scalars(select(ClientServiceAgreement).where(
+        ClientServiceAgreement.tenant_id == tenant_id)).all()
+    active = sum(employee.active for employee in employees)
+    result = {"tenant_id": tenant_id, "as_of": "2026-11-26",
+              "employee_count": len(employees), "active_employee_count": active,
+              "service_agreements": [{"service": row.service, "status": row.status,
+                                      "source_reference": row.source_reference} for row in agreements],
+              "privacy_rule": "Aggregate counts only; employee account details are excluded."}
+    audit(db, request, actor=claims["sub"], tenant_id=tenant_id, employee_id=None,
+          service="corporate_reporting", outcome="permitted", reason="OK")
+    return result
 
 
 @app.get("/api/v1/admin/tenants/{tenant_id}/employees/{employee_id}/service-summary", tags=["Admin"], responses=ERRORS)
@@ -234,8 +282,11 @@ def admin_service_summary(tenant_id: str, employee_id: str, db: Session = Depend
     employee = db.get(Employee, employee_id)
     if not employee or employee.tenant_id != tenant_id:
         raise ApiError(404, "EMPLOYEE_NOT_FOUND", "Employee record is not available.")
+    stock = SERVICES["stock"](db, employee_id)
+    if stock is not None:
+        stock["operational"] = operational_stock_summary(db, tenant_id, employee_id)
     return {"tenant_id": tenant_id, "employee_id": employee_id, "display_name": employee.display_name,
-            "as_of": AS_OF, "stock": SERVICES["stock"](db, employee_id),
+            "as_of": AS_OF, "stock": stock,
             "pension": SERVICES["pension"](db, employee_id),
             "wellness": wellness_summary(db, employee_id),
             "custody": SERVICES["custody"](db, employee_id),

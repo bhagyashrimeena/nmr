@@ -5,9 +5,10 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Employee, PayrollContribution, SharePurchase, StockAccount, StockIncentive, StockPlanDetail
+from .models import Employee, PayrollContribution, SharePurchase, StockAccount, StockIncentive, StockPlanDetail, Tenant
 from .v2_models import (
     ContributionElection, EmployeeProfile, FinancialEvent, LegalEntity, OperationalStatement,
+    ParticipantOperationalProfile,
     ReconciliationCase, ShareMembership, SharePayrollBatch, SharePayrollLine, SharePayrollRuleLink,
     SharePurchaseAllocation, SharePurchaseCycle, ShareTransferRequest, ShareholdingPlan,
     ShareholdingRuleVersion, TenantOperationalStatus,
@@ -38,8 +39,11 @@ def seed_v2(db: Session):
     entities = {
         "toyota-demo": ("LE-TOYOTA", "Toyota Motor Corporation", "TOYOTA-SHARE-01", "Toyota Employee Shareholding Association", "Toyota Motor"),
         "secondary-demo": ("LE-SAKURA", "Sakura Mobility Co., Ltd.", "SAKURA-SHARE-01", "Sakura Employee Share Plan", "Sakura Mobility"),
+        "asterfield": ("LE-AST", "Asterfield Industries Ltd.", "ASTER-SHARE-01", "Asterfield Employee Shareholding Association", "Asterfield Industries"),
     }
     for tenant_id, (entity_id, name, plan_id, plan_name, issuer) in entities.items():
+        if not db.get(Tenant, tenant_id):
+            continue
         if not db.get(TenantOperationalStatus, tenant_id):
             db.add(TenantOperationalStatus(tenant_id=tenant_id, status="ACTIVE"))
         if not db.get(LegalEntity, entity_id):
@@ -67,9 +71,11 @@ def seed_v2(db: Session):
                                            fractional_beneficial_units=tenant_id == "toyota-demo"))
         for employee in db.scalars(select(Employee).where(Employee.tenant_id == tenant_id)):
             if not db.get(EmployeeProfile, employee.id):
+                operational = db.get(ParticipantOperationalProfile, employee.id)
                 db.add(EmployeeProfile(employee_id=employee.id, legal_entity_id=entity_id,
-                                       hired_on=SNAPSHOT.date().replace(year=2022),
-                                       left_on=None, employment_status="ACTIVE" if employee.active else "LEFT"))
+                                       hired_on=operational.hired_on if operational else SNAPSHOT.date().replace(year=2022),
+                                       left_on=operational.left_on if operational else None,
+                                       employment_status="ACTIVE" if employee.active else "LEFT"))
     db.flush()
 
     for account in db.scalars(select(StockAccount).order_by(StockAccount.employee_id)):
@@ -78,7 +84,7 @@ def seed_v2(db: Session):
         membership_id = f"MEM-{account.employee_id}"
         if not db.get(ShareMembership, membership_id):
             db.add(ShareMembership(id=membership_id, plan_id=account.plan_id, employee_id=account.employee_id,
-                                   joined_on=detail.enrollment_date, status="ACTIVE",
+                                   joined_on=detail.enrollment_date, status="ACTIVE" if employee.active else "LEFT",
                                    opening_units=Decimal(account.opening_shares), opening_cash_jpy=Decimal("0")))
         if not db.get(ContributionElection, f"ELECT-{account.employee_id}"):
             db.add(ContributionElection(id=f"ELECT-{account.employee_id}", membership_id=membership_id,

@@ -75,6 +75,46 @@ def require_admin(write: bool = False):
     return dependency
 
 
+def require_provider(service: str, write: bool = False):
+    """Provider administrators and tenant-scoped service operators only."""
+    if service not in SERVICES:
+        raise ValueError(f"Unknown provider service: {service}")
+
+    def dependency(tenant_id: str, request: Request, db: Session = Depends(get_db),
+                   credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        claims = read_claims(credentials)
+        request.state.principal_scopes = ",".join(claims.get("scopes") or [])
+        scopes = claims.get("scopes") or []
+        if claims.get("role") == "admin" and ("admin:write" if write else "admin:read") in scopes:
+            return claims
+        needed = f"ops:{service}:{'write' if write else 'read'}"
+        if (claims.get("role") == "operator" and claims.get("tenant_id") == tenant_id
+                and claims.get("sub", "").startswith("operator:") and needed in scopes):
+            return claims
+        audit(db, request, actor=claims.get("sub", "unknown"), tenant_id=tenant_id,
+              employee_id=None, service=service, outcome="denied", reason="INSUFFICIENT_PERMISSIONS")
+        raise ApiError(403, "INSUFFICIENT_PERMISSIONS", "Provider service permission is required.")
+
+    return dependency
+
+
+def require_corporate():
+    def dependency(tenant_id: str, request: Request, db: Session = Depends(get_db),
+                   credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        claims = read_claims(credentials)
+        request.state.principal_scopes = ",".join(claims.get("scopes") or [])
+        if (claims.get("role") != "corporate_admin" or claims.get("tenant_id") != tenant_id
+                or not claims.get("sub", "").startswith("corporate:")
+                or "plan:read" not in (claims.get("scopes") or [])):
+            audit(db, request, actor=claims.get("sub", "unknown"), tenant_id=tenant_id,
+                  employee_id=None, service="corporate_reporting", outcome="denied",
+                  reason="INSUFFICIENT_PERMISSIONS")
+            raise ApiError(403, "INSUFFICIENT_PERMISSIONS", "Corporate plan permission is required.")
+        return claims
+
+    return dependency
+
+
 def require_client(service: str, operation: str = "read"):
     if service not in SERVICES:
         raise ValueError(f"Unknown client service: {service}")

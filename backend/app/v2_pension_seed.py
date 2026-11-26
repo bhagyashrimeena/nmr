@@ -5,7 +5,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Employee, PensionAccount, PensionAllocation, PensionContribution
+from .models import Employee, PensionAccount, PensionAllocation, PensionContribution, Tenant
 from .v2_models import (
     FinancialEvent, OperationalStatement, PensionContributionRecord, PensionFund,
     PensionFundPosition, PensionFutureAllocation, PensionNav, PensionPlanV2,
@@ -32,7 +32,10 @@ def pension_event(db: Session, event_id: str, tenant_id: str, employee_id: str,
 
 
 def seed_pension(db: Session):
-    for tenant_id, prefix in [("toyota-demo", "TOYOTA"), ("secondary-demo", "SAKURA")]:
+    for tenant_id, prefix in [("toyota-demo", "TOYOTA"), ("secondary-demo", "SAKURA"),
+                              ("asterfield", "ASTER")]:
+        if not db.get(Tenant, tenant_id):
+            continue
         plan_id = f"PEN-{prefix}"
         if not db.get(PensionPlanV2, plan_id):
             db.add(PensionPlanV2(id=plan_id, tenant_id=tenant_id,
@@ -53,7 +56,8 @@ def seed_pension(db: Session):
 
     for account in db.scalars(select(PensionAccount)):
         employee = db.get(Employee, account.employee_id)
-        prefix = "TOYOTA" if employee.tenant_id == "toyota-demo" else "SAKURA"
+        prefix = {"toyota-demo": "TOYOTA", "secondary-demo": "SAKURA",
+                  "asterfield": "ASTER"}[employee.tenant_id]
         contributions = db.scalars(select(PensionContribution).where(
             PensionContribution.employee_id == account.employee_id)).all()
         balance = Decimal(account.opening_balance_jpy + account.investment_change_jpy) + sum(

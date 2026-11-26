@@ -17,6 +17,8 @@ Draft routes require a service-specific scope in addition to the employee identi
 
 The provider administrator uses `POST /api/v1/auth/admin-token` with username `nmr-admin` and the locally configured password. Admin routes require `admin:read` or `admin:write` and are not gated by external MCP access. Keep the shared JWT signing key on the backend and integration host, never in a browser bundle.
 
+Provider operations tokens may use role `operator`, a tenant ID, a subject beginning `operator:`, and only the required scopes such as `ops:stock:read` or `ops:stock:write`. These tokens can use only their tenant's matching `/api/v2/admin/tenants/{tenant_id}/{service}/...` routes; they cannot call `/api/v1/admin` or another service's V2 operations. Corporate plan tokens use role `corporate_admin`, a matching tenant, a `corporate:` subject, and `plan:read`; they can retrieve only `/api/v2/corporate/tenants/{tenant_id}/aggregate`. That response contains aggregate counts and agreement references, never employee records. Neither role can call employee financial routes.
+
 ## Client routes
 
 | Service | Routes | Primary content |
@@ -67,6 +69,14 @@ All routes below begin `/api/v2/admin/tenants/{tenant_id}`. Admin users can also
 | Wellness | `GET /wellness/operations` | `PATCH /wellness/content/{content_id}` |
 
 State transitions require a nonempty review reason. Completing a stock transfer additionally requires a unique `confirmation_reference` of 8-80 characters. Invalid transitions return `409 STATE_CONFLICT`. An operator may view all tenant records through admin routes, but cannot access a record from another tenant through its ID. The client APIs always select the signed employee's own record. Pension operations include employee switch drafts for review; no switch execution route exists.
+
+### Provider case and report routes
+
+Platform administrators can use `GET /api/v2/admin/tenants/{tenant_id}/work-queue`, `PATCH /api/v2/admin/tenants/{tenant_id}/cases/{case_id}` (`INVESTIGATE` or evidenced `WAIVE`), `GET /api/v2/admin/tenants/{tenant_id}/reports/service/{service}?as_of=YYYY-MM-DD`, `GET /api/v2/admin/tenants/{tenant_id}/reports/service/{service}/sources?as_of=YYYY-MM-DD&offset=0&limit=10`, and `GET /api/v2/admin/tenants/{tenant_id}/reports/participants/{employee_id}?service=stock&as_of=YYYY-MM-DD`. The source endpoint pages through every matching journal entry with event ID, employee, source, effective date, amount and quantity. Reports are computed from persisted journal, award, content, and case records. `as_of` cannot exceed the available snapshot. Case waivers never post financial entries.
+
+Stock operators with `ops:stock:read` can inspect `GET /api/v2/admin/tenants/{tenant_id}/shareholding/payroll-batches/{batch_id}`. With `ops:stock:write`, they can call `POST /api/v2/admin/tenants/{tenant_id}/shareholding/cases/{case_id}/correct-payroll` with `evidence_reference` and `reason`. An eligible rejected payroll line creates a new posted correction batch, dated rule link, cash and incentive journal entries, and a case resolution. The rejected source batch stays unchanged; no shares are added. The endpoint rejects a repeated correction or period that is already posted.
+
+`GET /api/v2/admin/tenants/{tenant_id}/agreements` lists the selected client's service agreements and legal entity. The local population has Toyota, Sakura Mobility, and Asterfield Industries, with 256 deterministic participant records across the three tenants. These routes are provider administration capabilities and must never be exposed as chatbot tools.
 
 ## Errors and audit
 

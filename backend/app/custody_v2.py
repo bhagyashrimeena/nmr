@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .db import get_db
-from .security import ApiError, audit, require_admin, require_client
+from .security import ApiError, audit, require_client, require_provider
 from .v2_models import (CustodyAccountV2, CustodyActionV2, CustodyDividendV2,
                         CustodySettlementConfirmation,
                         FinancialEvent, OperationalStatement, ShareTransferRequest)
@@ -164,7 +164,7 @@ class ReviewInput(BaseModel):
 
 @router.patch("/admin/tenants/{tenant_id}/custody/actions/{action_id}")
 def review_action(tenant_id: str, action_id: str, body: ReviewInput, request: Request,
-                  db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                  db: Session = Depends(get_db), claims: dict = Depends(require_provider("custody", write=True))):
     row = db.get(CustodyActionV2, action_id)
     if not row or row.tenant_id != tenant_id:
         raise ApiError(404, "RESOURCE_NOT_FOUND", "Corporate action is not available.")
@@ -199,7 +199,7 @@ def review_action(tenant_id: str, action_id: str, body: ReviewInput, request: Re
 
 @router.patch("/admin/tenants/{tenant_id}/custody/dividends/{dividend_id}")
 def review_dividend(tenant_id: str, dividend_id: str, body: ReviewInput, request: Request,
-                    db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                    db: Session = Depends(get_db), claims: dict = Depends(require_provider("custody", write=True))):
     row = db.get(CustodyDividendV2, dividend_id)
     account = db.get(CustodyAccountV2, row.account_id) if row else None
     if not account or account.tenant_id != tenant_id:
@@ -226,7 +226,7 @@ def review_dividend(tenant_id: str, dividend_id: str, body: ReviewInput, request
 
 @router.get("/admin/tenants/{tenant_id}/custody/operations")
 def admin_custody_operations(tenant_id: str, request: Request, db: Session = Depends(get_db),
-                             claims: dict = Depends(require_admin())):
+                             claims: dict = Depends(require_provider("custody"))):
     accounts = list(db.scalars(select(CustodyAccountV2).where(CustodyAccountV2.tenant_id == tenant_id)))
     account_ids = [x.id for x in accounts]
     actions = list(db.scalars(select(CustodyActionV2).where(CustodyActionV2.tenant_id == tenant_id)))

@@ -45,3 +45,5 @@
 .section td button:hover{background:#eef3f7}
 @media(max-width:900px){.access-summary,.service-access-row{align-items:stretch;flex-direction:column}.access-summary span{text-align:left}.service-access-action{align-items:start}.client-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.calculator,.audit-filter-group{align-items:stretch;flex-direction:column}.inline-filter input,.inline-filter select,.calculator input,.audit-filter-group select{width:100%}.subtabs button{padding:11px}.service-access-row{padding:16px}.access-summary strong{white-space:normal}}
+
+.operations-review button{margin:12px 8px 0 0;padding:9px 12px;border:1px solid #cbd6e2;border-radius:5px;background:#fff;color:#213c5e;font-size:12px;font-weight:700}.operations-review button:not(:disabled):hover{background:#edf3f8}.operations-review select{border:1px solid #d7e0e8;border-radius:5px;padding:10px 11px;color:#263950;background:#fff}

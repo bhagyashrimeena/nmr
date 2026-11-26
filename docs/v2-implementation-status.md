@@ -7,8 +7,11 @@ Source blueprint: `NMR_Workplace_Finance_V2_Functional_Blueprint.md`. This work 
 - `backend/app/v2_models.py`: normalized operational tables and append-only ORM guard for financial events.
 - `backend/app/migrations.py`: additive SQLite table creation and schema version record. Startup invokes it before seeding; existing V1 tables and policy settings remain in place.
 - `backend/app/v2_*_seed.py`: repeatable fixed records per service. The stock seed also creates legal entities and employee profiles.
+- `backend/app/population_seed.py`: additive, deterministic three-client participant population and service agreements.
+- `backend/app/provider_ops.py`: case queue, evidenced case review, and source-derived reports.
 - `backend/app/{stock,pension,equity,custody,wellness}_v2.py`: `/api/v2` routers. Client handlers use a shared signed-identity and tenant/service policy dependency. Admin handlers use separate admin permissions.
 - `frontend/src/*Operations.tsx`: operator views for each service. They read V2 routes. The existing overview views continue to use V1 summaries.
+- `frontend/src/ProviderDirectories.tsx` and `ProviderOperations.tsx`: searchable participants, agreements, case history, and dated report views.
 - `backend/tests/test_*_v2.py` and `backend/tests/test_realism_qa.py`: domain, identity, policy, API, and financial operations verification.
 - `docs/v2-api-contract.md`: teammate handoff; `docs/openapi.json`: exported OpenAPI snapshot.
 
@@ -23,10 +26,12 @@ The data path is: signed employee token -> master/service/employee policy -> ten
 5. Custody: independent opening inventory, paid versus scheduled dividends, transfer correlation and confirmation, record-date corporate-action entitlement, and a stock split that posts once.
 6. Wellness: published and current education, source-backed employer rules with underlying service policy checks, benefit comparison, seminar schedule, content review, learning progress, and a bounded monthly savings calculator.
 7. Portal: operator tabs for all five services and existing master/per-service access management. Automated browser smoke covers each area.
+8. Provider operations: stock payroll correction with a retained rejected source batch, versioned rule and new posted entries; a cross-service work queue with investigation and evidenced waiver states; dated reports derived from persisted events and domain records.
+9. Client register and permissions: 256 participant identities across three clients with varied enrollment, employment, award, and account histories; 15 service agreements; tenant-scoped provider operator permissions and aggregate-only corporate plan reporting.
 
 ## Remaining work for a larger implementation
 
-- Expand the fixed tenant and employee population and cover employment events, PSU certification, reserve approvals, option expiry variations, and report jobs.
+- Deepen employment-event policy, PSU certification, reserve approvals, option expiry variations, and report jobs. The generated population has varied histories, but not every participant uses all five services.
 - Add dedicated custody settlement and position-lot tables for all lifecycle states, plus richer reconciliation and statement generation.
 - Add content revision history, distinct editorial reviewers, seminar registration and attendance, and aggregate participation reporting.
 - Add operator creation forms for stock payroll and purchase cycles; those creation routes are currently API only.

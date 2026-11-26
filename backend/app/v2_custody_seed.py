@@ -5,17 +5,21 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import CustodyAccount, CustodySecurity, Dividend, DividendDetail, Employee
+from .models import CustodyAccount, CustodyPosition, CustodySecurity, Dividend, DividendDetail, Employee
 from .v2_models import (CustodyAccountV2, CustodyActionV2, CustodyDividendV2,
                         FinancialEvent, OperationalStatement)
 from .v2_seed import SNAPSHOT, at_day
 
 
 def seed_custody(db: Session):
-    opening = {"EMP-001": 120, "EMP-002": 36, "SEC-001": 13}
+    opening = {}
     for account in db.scalars(select(CustodyAccount)):
         employee = db.get(Employee, account.employee_id)
-        instrument = "Toyota Motor ordinary shares" if employee.tenant_id == "toyota-demo" else "Sakura Mobility ordinary shares"
+        instrument = {"toyota-demo": "Toyota Motor ordinary shares",
+                      "secondary-demo": "Sakura Mobility ordinary shares",
+                      "asterfield": "Asterfield Industries ordinary shares"}[employee.tenant_id]
+        opening[employee.id] = sum((row.quantity for row in db.scalars(select(CustodyPosition).where(
+            CustodyPosition.employee_id == employee.id, CustodyPosition.instrument == instrument))), 0)
         security = db.get(CustodySecurity, instrument)
         if not db.get(CustodyAccountV2, account.account_id):
             db.add(CustodyAccountV2(id=account.account_id, tenant_id=employee.tenant_id,

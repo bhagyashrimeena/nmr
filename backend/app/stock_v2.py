@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 
 from .db import get_db
 from .models import Employee, Tenant
-from .security import ApiError, audit, require_admin, require_client
+from .security import ApiError, audit, require_client, require_provider
 from .v2_models import (
-    ContributionElection, CustodyAccountV2, CustodySettlementConfirmation, FinancialEvent,
+    CaseResolution, ContributionElection, CustodyAccountV2, CustodySettlementConfirmation, FinancialEvent,
     OperationalStatement, ReconciliationCase,
     ShareMembership, SharePayrollBatch, SharePayrollLine, SharePayrollRuleLink,
     SharePurchaseAllocation, SharePurchaseCycle, ShareTransferRequest, ShareholdingPlan,
@@ -324,6 +324,118 @@ class PayrollBatchInput(BaseModel):
     lines: list[PayrollLineInput] = Field(min_length=1)
 
 
+class PayrollCorrectionInput(BaseModel):
+    evidence_reference: str = Field(min_length=8, max_length=80)
+    reason: str = Field(min_length=8, max_length=200)
+
+
+@router.get("/admin/tenants/{tenant_id}/shareholding/payroll-batches/{batch_id}")
+def admin_payroll_detail(tenant_id: str, batch_id: str, request: Request,
+                         db: Session = Depends(get_db), claims: dict = Depends(require_provider("stock"))):
+    admin_context(request, claims, "view_payroll_batch")
+    plan = tenant_plan(db, tenant_id)
+    batch = db.get(SharePayrollBatch, batch_id)
+    if not batch or batch.plan_id != plan.id:
+        raise ApiError(404, "RESOURCE_NOT_FOUND", "Payroll batch is not available.")
+    lines = db.scalars(select(SharePayrollLine).where(SharePayrollLine.batch_id == batch.id)).all()
+    link = db.get(SharePayrollRuleLink, batch.id)
+    rule = db.get(ShareholdingRuleVersion, link.rule_id) if link else None
+    events = db.scalars(select(FinancialEvent).where(
+        FinancialEvent.tenant_id == tenant_id, FinancialEvent.service == "stock",
+        FinancialEvent.source_reference == batch.source_reference)).all()
+    cases = db.scalars(select(ReconciliationCase).where(
+        ReconciliationCase.tenant_id == tenant_id,
+        ReconciliationCase.source_reference == batch.source_reference)).all()
+    result = {"id": batch.id, "period": batch.period, "source_reference": batch.source_reference,
+              "expected_jpy": money(batch.expected_jpy), "received_jpy": money(batch.received_jpy),
+              "state": batch.state,
+              "rule_source_reference": rule.source_reference if rule else None,
+              "lines": [{"employee_id": row.employee_id, "amount_jpy": money(row.amount_jpy),
+                         "incentive_jpy": money(row.incentive_jpy), "state": row.state,
+                         "rejection_reason": row.rejection_reason} for row in lines],
+              "events": [ledger_row(row) for row in events],
+              "case_ids": [row.id for row in cases]}
+    audit(db, request, actor=claims["sub"], tenant_id=tenant_id, employee_id=None,
+          service="stock", outcome="permitted", reason="OK")
+    return result
+
+
+@router.post("/admin/tenants/{tenant_id}/shareholding/cases/{case_id}/correct-payroll", status_code=201)
+def admin_correct_payroll(tenant_id: str, case_id: str, body: PayrollCorrectionInput,
+                          request: Request, db: Session = Depends(get_db),
+                          claims: dict = Depends(require_provider("stock", write=True))):
+    admin_context(request, claims, "correct_payroll_exception")
+    case = db.get(ReconciliationCase, case_id)
+    if not case or case.tenant_id != tenant_id or case.service != "stock":
+        raise ApiError(404, "RESOURCE_NOT_FOUND", "Stock exception is not available.")
+    if case.status not in {"OPEN", "INVESTIGATING"} or case.break_type != "UNMATCHED_PAYROLL":
+        raise ApiError(409, "STATE_CONFLICT", "This exception cannot receive a payroll correction.")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{7,79}", body.evidence_reference):
+        raise ApiError(422, "INVALID_REQUEST", "A valid correction evidence reference is required.")
+    if db.scalar(select(CaseResolution).where(CaseResolution.evidence_reference == body.evidence_reference)):
+        raise ApiError(409, "DUPLICATE_REQUEST", "This correction evidence has already been used.")
+    plan = tenant_plan(db, tenant_id)
+    original = db.scalar(select(SharePayrollBatch).where(
+        SharePayrollBatch.plan_id == plan.id,
+        SharePayrollBatch.source_reference == case.source_reference))
+    if not original or original.state != "REJECTED" or original.received_jpy != 0:
+        raise ApiError(409, "RECONCILIATION_FAILED", "The rejected source batch is not eligible for correction.")
+    lines = db.scalars(select(SharePayrollLine).where(SharePayrollLine.batch_id == original.id)).all()
+    if len(lines) != 1 or lines[0].employee_id != case.employee_id or lines[0].amount_jpy != case.expected_jpy:
+        raise ApiError(409, "RECONCILIATION_FAILED", "The source line does not match the exception.")
+    member = membership(db, tenant_id, case.employee_id)[1]
+    election = db.scalar(select(ContributionElection).where(
+        ContributionElection.membership_id == member.id,
+        ContributionElection.effective_period <= original.period,
+        ContributionElection.state == "EFFECTIVE").order_by(ContributionElection.effective_period.desc()))
+    if member.status != "ACTIVE" or not election or election.monthly_jpy != lines[0].amount_jpy:
+        raise ApiError(409, "RECONCILIATION_FAILED", "The participant election does not support this correction.")
+    if db.scalar(select(SharePayrollLine.id).join(SharePayrollBatch).where(
+        SharePayrollLine.employee_id == case.employee_id,
+        SharePayrollLine.state == "POSTED", SharePayrollBatch.period == original.period)):
+        raise ApiError(409, "DUPLICATE_REQUEST", "A contribution is already posted for this period.")
+    rule = rule_for_period(db, plan.id, original.period)
+    batch_id = f"CORR-{case.id}"
+    amount = Decimal(lines[0].amount_jpy)
+    incentive = (amount * Decimal(rule.incentive_percent) / 100).quantize(Decimal("0.01"))
+    db.add(SharePayrollBatch(id=batch_id, plan_id=plan.id, period=original.period,
+                             source_reference=body.evidence_reference, expected_jpy=amount,
+                             received_jpy=amount, state="POSTED"))
+    db.add(SharePayrollRuleLink(batch_id=batch_id, rule_id=rule.id))
+    db.add(SharePayrollLine(id=f"LINE-{batch_id}", batch_id=batch_id,
+                            employee_id=case.employee_id, amount_jpy=amount,
+                            incentive_jpy=incentive, state="POSTED"))
+    for kind, value in (("PAYROLL_POSTED", amount), ("INCENTIVE_POSTED", incentive)):
+        if value:
+            event_id = f"EV-{kind}-{batch_id}"
+            db.add(FinancialEvent(id=event_id, tenant_id=tenant_id, employee_id=case.employee_id,
+                                  service="stock", event_type=kind,
+                                  source_reference=body.evidence_reference, idempotency_key=event_id,
+                                  correlation_id=case.id, occurred_at=at_day(original.period),
+                                  effective_at=at_day(original.period), recorded_at=SNAPSHOT,
+                                  amount_jpy=value, quantity=Decimal("0"), actor=claims["sub"]))
+    case.actual_jpy = amount
+    case.status = "RESOLVED"
+    case.resolution_note = body.reason
+    db.add(CaseResolution(case_id=case.id, action="PAYROLL_CORRECTION_POSTED",
+                          evidence_reference=body.evidence_reference, related_batch_id=batch_id,
+                          reason=body.reason, actor=claims["sub"]))
+    task = db.scalar(select(WorkflowTask).where(WorkflowTask.tenant_id == tenant_id,
+                                                 WorkflowTask.resource_id == case.id))
+    if task:
+        previous = task.state
+        task.state = "RESOLVED"
+        task.updated_at = SNAPSHOT
+        db.add(WorkflowTransition(task_id=task.id, from_state=previous, to_state="RESOLVED",
+                                  actor=claims["sub"], reason=body.reason))
+    audit(db, request, actor=claims["sub"], tenant_id=tenant_id,
+          employee_id=case.employee_id, service="stock", outcome="changed",
+          reason="PAYROLL_CORRECTION_POSTED")
+    return {"case_id": case.id, "status": case.status, "correction_batch_id": batch_id,
+            "evidence_reference": body.evidence_reference, "posted_cash_jpy": money(amount),
+            "incentive_jpy": money(incentive), "share_units_posted": units(0)}
+
+
 class StateInput(BaseModel):
     state: str
     reason: str = Field(min_length=3, max_length=200)
@@ -336,7 +448,7 @@ def admin_context(request: Request, claims: dict, operation: str):
 
 @router.post("/admin/tenants/{tenant_id}/shareholding/payroll-batches", status_code=201)
 def admin_receive_payroll(tenant_id: str, body: PayrollBatchInput, request: Request,
-                          db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                          db: Session = Depends(get_db), claims: dict = Depends(require_provider("stock", write=True))):
     admin_context(request, claims, "receive_payroll")
     plan = tenant_plan(db, tenant_id)
     rule = rule_for_period(db, plan.id, body.period)
@@ -382,7 +494,7 @@ def admin_receive_payroll(tenant_id: str, body: PayrollBatchInput, request: Requ
 
 @router.patch("/admin/tenants/{tenant_id}/shareholding/payroll-batches/{batch_id}")
 def admin_review_payroll(tenant_id: str, batch_id: str, body: StateInput, request: Request,
-                         db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                         db: Session = Depends(get_db), claims: dict = Depends(require_provider("stock", write=True))):
     admin_context(request, claims, "review_payroll")
     plan = tenant_plan(db, tenant_id)
     batch = db.get(SharePayrollBatch, batch_id)
@@ -451,7 +563,7 @@ class PurchaseCycleInput(BaseModel):
 
 @router.post("/admin/tenants/{tenant_id}/shareholding/purchase-cycles", status_code=201)
 def admin_create_purchase(tenant_id: str, body: PurchaseCycleInput, request: Request,
-                          db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                          db: Session = Depends(get_db), claims: dict = Depends(require_provider("stock", write=True))):
     admin_context(request, claims, "create_purchase")
     plan = tenant_plan(db, tenant_id)
     if body.trade_date > SNAPSHOT.date():
@@ -490,7 +602,7 @@ def admin_create_purchase(tenant_id: str, body: PurchaseCycleInput, request: Req
 
 @router.patch("/admin/tenants/{tenant_id}/shareholding/purchase-cycles/{cycle_id}")
 def admin_review_purchase(tenant_id: str, cycle_id: str, body: StateInput, request: Request,
-                          db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                          db: Session = Depends(get_db), claims: dict = Depends(require_provider("stock", write=True))):
     admin_context(request, claims, "review_purchase")
     plan = tenant_plan(db, tenant_id)
     cycle = db.get(SharePurchaseCycle, cycle_id)
@@ -533,7 +645,7 @@ def admin_review_purchase(tenant_id: str, cycle_id: str, body: StateInput, reque
 
 @router.patch("/admin/tenants/{tenant_id}/shareholding/transfers/{request_id}")
 def admin_review_transfer(tenant_id: str, request_id: str, body: TransferReview, request: Request,
-                          db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                          db: Session = Depends(get_db), claims: dict = Depends(require_provider("stock", write=True))):
     admin_context(request, claims, "review_transfer")
     row = db.get(ShareTransferRequest, request_id)
     if not row or row.tenant_id != tenant_id:
@@ -584,7 +696,7 @@ def admin_review_transfer(tenant_id: str, request_id: str, body: TransferReview,
 
 @router.get("/admin/tenants/{tenant_id}/shareholding/operations")
 def admin_stock_operations(tenant_id: str, request: Request, db: Session = Depends(get_db),
-                           claims: dict = Depends(require_admin())):
+                           claims: dict = Depends(require_provider("stock"))):
     admin_context(request, claims, "view_stock_operations")
     plan = tenant_plan(db, tenant_id)
     rule = rule_for_period(db, plan.id, SNAPSHOT.date())
@@ -623,7 +735,9 @@ def admin_stock_operations(tenant_id: str, request: Request, db: Session = Depen
               "exceptions": [{"id": row.id, "employee_id": row.employee_id, "source_reference": row.source_reference,
                               "break_type": row.break_type, "expected_jpy": money(row.expected_jpy or 0),
                               "actual_jpy": money(row.actual_jpy or 0), "status": row.status,
-                              "owner": row.owner, "resolution_note": row.resolution_note} for row in breaks],
+                              "owner": row.owner, "resolution_note": row.resolution_note,
+                              "resolution_evidence": db.get(CaseResolution, row.id).evidence_reference
+                              if db.get(CaseResolution, row.id) else None} for row in breaks],
               "transfers": [transfer_row(row) for row in transfers],
               "statements": [{"id": row.id, "employee_id": row.employee_id, "period": row.period,
                               "as_of": row.as_of, "version": row.version,

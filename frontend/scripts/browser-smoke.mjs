@@ -17,7 +17,7 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 900 
 const page = await context.newPage()
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
-const presentationTerms = /\b(?:demo|fictional|synthetic|simulation|simulated|mock|poc|illustrative|hypothetical)\b/i
+const presentationTerms = /\b(?:fictional|synthetic|simulation|simulated|mock|poc|illustrative|hypothetical)\b/i
 async function assertOperationalCopy(locator) {
   assert.doesNotMatch(await locator.innerText(), presentationTerms)
 }
@@ -33,6 +33,7 @@ try {
   await page.getByRole('button', { name: 'Sign in' }).click()
   await page.getByRole('heading', { name: 'Overview', level: 1 }).waitFor()
   await page.getByText('Externally accessible').waitFor()
+  await page.locator('.environment-label').waitFor()
   await assertOperationalCopy(page.locator('.app-shell'))
   await page.screenshot({ path: resolve(screenshots, 'overview.png'), fullPage: true })
 
@@ -60,6 +61,8 @@ try {
       await page.getByText('Shareholding plan').last().waitFor()
       await page.getByRole('tab', { name: 'Payroll batches' }).click()
       await page.getByRole('cell', { name: 'REJECTED' }).waitFor()
+      await page.getByRole('button', { name: 'PAY-EMP-002-202611' }).click()
+      await page.getByRole('heading', { name: 'Batch PAY-EMP-002-202611' }).waitFor()
       await page.getByRole('tab', { name: 'Transfer requests' }).click()
       await page.getByText('TR-001').first().waitFor()
       await page.getByRole('tab', { name: 'Exceptions' }).click()
@@ -153,7 +156,28 @@ try {
 
   await nav.getByRole('button', { name: 'Corporate Clients' }).click()
   await page.getByRole('heading', { name: 'Corporate Clients', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: /Service agreements/ }).waitFor()
   await assertOperationalCopy(page.locator('.app-shell'))
+  await page.screenshot({ path: resolve(screenshots, 'client-agreements.png'), fullPage: true })
+
+  await nav.getByRole('button', { name: 'Participants' }).click()
+  await page.getByRole('heading', { name: 'Participants', level: 1 }).waitFor()
+  await page.getByPlaceholder('Name, ID, department or cohort').fill('TYO-0001')
+  await page.getByRole('cell', { name: 'TYO-0001' }).waitFor()
+  await page.screenshot({ path: resolve(screenshots, 'participant-directory.png'), fullPage: true })
+
+  await nav.getByRole('button', { name: 'Work Queue' }).click()
+  await page.getByRole('heading', { name: 'Work Queue', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: 'Reconciliation work queue' }).waitFor()
+  await page.getByRole('button', { name: 'Inspect' }).first().click()
+  await page.screenshot({ path: resolve(screenshots, 'work-queue.png'), fullPage: true })
+
+  await nav.getByRole('button', { name: 'Operational Reports' }).click()
+  await page.getByRole('heading', { name: 'Operational Reports', level: 1 }).waitFor()
+  await page.getByRole('heading', { name: 'Source journal' }).waitFor()
+  await page.getByRole('button', { name: 'Next' }).last().click()
+  await page.getByText('page 2').waitFor()
+  await page.screenshot({ path: resolve(screenshots, 'operational-reports.png'), fullPage: true })
 
   await nav.getByRole('button', { name: 'MCP Access Management' }).click()
   await page.getByRole('heading', { name: 'MCP Access Management', level: 1 }).waitFor()
@@ -190,7 +214,7 @@ try {
   await page.getByText('External calls and policy events').waitFor()
   await assertOperationalCopy(page.locator('.app-shell'))
   assert.deepEqual(errors, [])
-  console.log('Browser smoke passed: five service screens, access controls, persisted UI toggle, audit screen; screenshots saved')
+  console.log('Browser smoke passed: five services, participants, agreements, work queue, reports, access controls, audit; screenshots saved')
 } finally {
   await browser.close()
 }

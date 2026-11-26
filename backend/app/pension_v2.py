@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from .db import get_db
 from .details import growth_projection
 from .models import Employee, PensionAccount
-from .security import ApiError, audit, require_admin, require_client
+from .security import ApiError, audit, require_client, require_provider
 from .v2_models import (
     FinancialEvent, OperationalStatement, PensionAllocationInstruction,
     PensionContributionRecord, PensionFund, PensionFundPosition, PensionFutureAllocation,
@@ -290,7 +290,7 @@ class InstructionReview(BaseModel):
 
 @router.patch("/admin/tenants/{tenant_id}/pension/instructions/{instruction_id}")
 def admin_review_instruction(tenant_id: str, instruction_id: str, body: InstructionReview, request: Request,
-                             db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                             db: Session = Depends(get_db), claims: dict = Depends(require_provider("pension", write=True))):
     request.state.operation = "review_pension_instruction"
     request.state.principal_scopes = ",".join(claims.get("scopes") or [])
     row = db.get(PensionAllocationInstruction, instruction_id)
@@ -320,7 +320,7 @@ def admin_review_instruction(tenant_id: str, instruction_id: str, body: Instruct
 
 @router.get("/admin/tenants/{tenant_id}/pension/operations")
 def admin_pension_operations(tenant_id: str, request: Request, db: Session = Depends(get_db),
-                             claims: dict = Depends(require_admin())):
+                             claims: dict = Depends(require_provider("pension"))):
     request.state.operation = "view_pension_operations"
     request.state.principal_scopes = ",".join(claims.get("scopes") or [])
     plan = plan_for_tenant(db, tenant_id)

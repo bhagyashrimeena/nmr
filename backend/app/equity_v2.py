@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from .db import get_db
 from .models import Employee
-from .security import ApiError, audit, require_admin, require_client
+from .security import ApiError, audit, require_client, require_provider
 from .v2_models import (EquityAward, EquityExerciseDraft, EquityPlanV2, EquityRelease,
                         EquityTranche, OperationalStatement, ReconciliationCase)
 
@@ -179,7 +179,7 @@ class ReviewInput(BaseModel):
 
 @router.patch("/admin/tenants/{tenant_id}/equity/releases/{release_id}")
 def review_release(tenant_id: str, release_id: str, body: ReviewInput, request: Request,
-                   db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                   db: Session = Depends(get_db), claims: dict = Depends(require_provider("equity", write=True))):
     release = db.get(EquityRelease, release_id)
     plan = plan_for_tenant(db, tenant_id)
     award = db.get(EquityAward, release.award_id) if release else None
@@ -202,7 +202,7 @@ def review_release(tenant_id: str, release_id: str, body: ReviewInput, request: 
 
 @router.patch("/admin/tenants/{tenant_id}/equity/grants/{grant_id}")
 def review_grant(tenant_id: str, grant_id: str, body: ReviewInput, request: Request,
-                 db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
+                 db: Session = Depends(get_db), claims: dict = Depends(require_provider("equity", write=True))):
     plan = plan_for_tenant(db, tenant_id)
     row = db.get(EquityAward, grant_id)
     if not row or row.plan_id != plan.id:
@@ -224,7 +224,7 @@ def review_grant(tenant_id: str, grant_id: str, body: ReviewInput, request: Requ
 
 @router.get("/admin/tenants/{tenant_id}/equity/operations")
 def admin_equity_operations(tenant_id: str, request: Request, db: Session = Depends(get_db),
-                            claims: dict = Depends(require_admin())):
+                            claims: dict = Depends(require_provider("equity"))):
     plan = plan_for_tenant(db, tenant_id)
     awards = list(db.scalars(select(EquityAward).where(EquityAward.plan_id == plan.id)))
     issued = sum(x.granted_units for x in awards if x.state in {"ISSUED", "ACTIVE"})

@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from .models import Tenant
 from .v2_models import WellnessBenefitAccess, WellnessBenefitRule, WellnessContentV2, WellnessSeminar
 
 
@@ -13,8 +14,11 @@ def seed_wellness(db: Session):
         ("ED-DRAFT-01", "toyota-demo", "Investment basics", "investment", "DRAFT", date(2027, 5, 31)),
         ("ED-EXPIRED-01", "toyota-demo", "Prior benefits overview", "benefits", "PUBLISHED", date(2026, 10, 31)),
         ("ED-SAK-01", "secondary-demo", "Saving through work", "saving", "PUBLISHED", date(2027, 5, 31)),
+        ("ED-AST-01", "asterfield", "Understanding workplace savings", "saving", "PUBLISHED", date(2027, 5, 31)),
     ]
     for item_id, tenant_id, title, category, state, expiry in items:
+        if not db.get(Tenant, tenant_id):
+            continue
         if not db.get(WellnessContentV2, item_id):
             db.add(WellnessContentV2(id=item_id, tenant_id=tenant_id, title=title,
                                      category=category, language="en",
