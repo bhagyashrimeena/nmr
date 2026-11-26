@@ -28,6 +28,7 @@ export default function StockOperations({ tab, tenant, request }: Props) {
   const [data, setData] = useState<any>(null)
   const [search, setSearch] = useState('')
   const [reason, setReason] = useState('Reviewed by plan operations')
+  const [confirmationRef, setConfirmationRef] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
 
@@ -40,7 +41,7 @@ export default function StockOperations({ tab, tenant, request }: Props) {
     setBusy(requestId); setError('')
     try {
       await request('/api/v2/admin/tenants/' + tenant + '/shareholding/transfers/' + requestId,
-        { method: 'PATCH', body: JSON.stringify({ state, reason }) })
+        { method: 'PATCH', body: JSON.stringify({ state, reason, confirmation_reference: state === 'COMPLETED' ? confirmationRef : null }) })
       setData(await request('/api/v2/admin/tenants/' + tenant + '/shareholding/operations'))
     } catch (e) { setError((e as Error).message) } finally { setBusy('') }
   }
@@ -65,6 +66,9 @@ export default function StockOperations({ tab, tenant, request }: Props) {
         <div><span>Next purchase date</span><strong>{data.plan.next_purchase_date}</strong></div>
         <div><span>Monthly contribution range</span><strong>{amount(data.plan.minimum_monthly_jpy)} - {amount(data.plan.maximum_monthly_jpy)}</strong></div>
         <div><span>Employer incentive</span><strong>{Number(data.plan.incentive_percent)}%</strong></div>
+        <div><span>Rule reference</span><strong>{data.plan.rule_source_reference}</strong></div>
+        <div><span>Rule effective</span><strong>{data.plan.rule_effective_on}</strong></div>
+        <div><span>Beneficial units</span><strong>{data.plan.fractional_beneficial_units ? 'Fractional permitted' : 'Whole units'}</strong></div>
         <div><span>External access</span><strong>Managed in MCP Access Management</strong></div>
       </div></section>
     </>}
@@ -72,7 +76,7 @@ export default function StockOperations({ tab, tenant, request }: Props) {
     {tab === 'Members' && <Panel title="Member directory" note={filtered(data.members).length + ' shown'} columns={['Employee', 'Name', 'Joined', 'Status', 'Share units', 'Plan cash']} rows={filtered(data.members).map((row: any) => [row.employee_id, row.display_name, row.joined_on, row.status, Number(row.shares_held).toLocaleString(), amount(row.cash_jpy)])}/>}
     {tab === 'Payroll batches' && <Panel title="Payroll collection" note={filtered(data.payroll_batches).length + ' shown'} columns={['Reference', 'Period', 'Expected', 'Received', 'Rejected lines', 'State']} rows={filtered(data.payroll_batches).map((row: any) => [row.source_reference, row.period, amount(row.expected_jpy), amount(row.received_jpy), row.failed_lines, row.state])}/>}
     {tab === 'Purchase cycles' && <Panel title="Purchase and allocation cycles" note={filtered(data.purchase_cycles).length + ' shown'} columns={['Reference', 'Trade date', 'Settlement', 'Unit price', 'Units', 'State']} rows={filtered(data.purchase_cycles).map((row: any) => [row.id, row.trade_date, row.settlement_date || 'Pending', amount(row.unit_price_jpy), Number(row.acquired_units).toLocaleString(), row.state])}/>}
-    {tab === 'Transfer requests' && <><div className="operations-review"><label>Review note<input value={reason} onChange={e => setReason(e.target.value)} minLength={3} maxLength={200}/></label></div><Panel title="Transfer request queue" note={data.transfers.length + ' requests'} columns={['Request', 'Employee', 'Units', 'Recipient account', 'State', 'Review']} rows={data.transfers.map((row: any) => [row.request_id, row.employee_id, Number(row.units).toLocaleString(), row.recipient_account_reference, row.state, nextState[row.state] ? <button type="button" disabled={Boolean(busy) || reason.trim().length < 3} onClick={() => advance(row.request_id, nextState[row.state])}>{busy === row.request_id ? 'Saving...' : 'Advance to ' + nextState[row.state].replaceAll('_', ' ')}</button> : 'Complete'])}/></>}
+    {tab === 'Transfer requests' && <><div className="operations-review"><label>Review note<input value={reason} onChange={e => setReason(e.target.value)} minLength={3} maxLength={200}/></label><label>Settlement confirmation<input value={confirmationRef} onChange={e => setConfirmationRef(e.target.value)} placeholder="Required to complete transfer" minLength={8} maxLength={80}/></label></div><Panel title="Transfer request queue" note={data.transfers.length + ' requests'} columns={['Request', 'Employee', 'Units', 'Recipient account', 'State', 'Review']} rows={data.transfers.map((row: any) => [row.request_id, row.employee_id, Number(row.units).toLocaleString(), row.recipient_account_reference, row.state, nextState[row.state] ? <button type="button" disabled={Boolean(busy) || reason.trim().length < 3 || (nextState[row.state] === 'COMPLETED' && confirmationRef.trim().length < 8)} onClick={() => advance(row.request_id, nextState[row.state])}>{busy === row.request_id ? 'Saving...' : 'Advance to ' + nextState[row.state].replaceAll('_', ' ')}</button> : 'Complete'])}/></>}
     {tab === 'Exceptions' && <Panel title="Reconciliation cases" note={filtered(data.exceptions).length + ' shown'} columns={['Case', 'Employee', 'Source', 'Break type', 'Expected', 'Actual', 'Status', 'Owner']} rows={filtered(data.exceptions).map((row: any) => [row.id, row.employee_id || 'Plan', row.source_reference, row.break_type.replaceAll('_', ' '), amount(row.expected_jpy), amount(row.actual_jpy), row.status, row.owner])}/>}
   </>
 }

@@ -41,7 +41,6 @@ def stock_summary(db: Session, employee_id: str):
     contributions = db.scalars(select(PayrollContribution).where(PayrollContribution.employee_id == employee_id).order_by(PayrollContribution.month.desc())).all()
     purchases = db.scalars(select(SharePurchase).where(SharePurchase.employee_id == employee_id).order_by(SharePurchase.purchase_date.desc())).all()
     incentives = db.scalars(select(StockIncentive).where(StockIncentive.employee_id == employee_id)).all()
-    dividends = db.scalars(select(Dividend).where(Dividend.employee_id == employee_id, Dividend.status == "credited")).all()
     paid = result["total_contributions_jpy"]
     incentive_total = sum(x.amount_jpy for x in incentives)
     purchase_cost = sum(p.amount_jpy for p in purchases)
@@ -68,7 +67,7 @@ def stock_summary(db: Session, employee_id: str):
         "illustrative_portfolio_value_jpy": value,
         "illustrative_unrealized_change_jpy": value - total_cost,
         "current_quarter_purchased_shares": sum(p.shares for p in purchases if p.purchase_date.year == AS_OF.year and (p.purchase_date.month - 1) // 3 == (AS_OF.month - 1) // 3),
-        "dividends_received_jpy": sum(d.amount_jpy for d in dividends),
+        "dividends_received_jpy": 0,
         "contributions": [{"month": c.month, "amount_jpy": c.amount_jpy,
                            "employer_incentive_jpy": next((x.amount_jpy for x in incentives if x.month == c.month), 0)} for c in contributions],
         "recent_purchases": purchase_items[:5], "purchases": purchase_items,

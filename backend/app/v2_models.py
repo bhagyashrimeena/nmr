@@ -22,6 +22,12 @@ class LegalEntity(Base):
     name: Mapped[str] = mapped_column(String)
 
 
+class TenantOperationalStatus(Base):
+    __tablename__ = "tenant_operational_status"
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), primary_key=True)
+    status: Mapped[str] = mapped_column(String)
+
+
 class EmployeeProfile(Base):
     __tablename__ = "employee_profiles"
     employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), primary_key=True)
@@ -246,6 +252,12 @@ class WellnessBenefitRule(Base):
     review_expires_on: Mapped[date] = mapped_column(Date)
 
 
+class WellnessBenefitAccess(Base):
+    __tablename__ = "wellness_benefit_access"
+    rule_id: Mapped[str] = mapped_column(ForeignKey("wellness_benefit_rules.id"), primary_key=True)
+    underlying_service: Mapped[str] = mapped_column(String)
+
+
 class WellnessSeminar(Base):
     __tablename__ = "wellness_seminars"
     id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -271,6 +283,17 @@ class ShareholdingPlan(Base):
     minimum_transfer_units: Mapped[Decimal] = mapped_column(Numeric(18, 6))
     next_purchase_date: Mapped[date] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String)
+
+
+class ShareholdingRuleVersion(Base):
+    __tablename__ = "shareholding_rule_versions"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    plan_id: Mapped[str] = mapped_column(ForeignKey("shareholding_plans.id"), index=True)
+    effective_on: Mapped[date] = mapped_column(Date)
+    source_reference: Mapped[str] = mapped_column(String)
+    incentive_percent: Mapped[Decimal] = mapped_column(Numeric(7, 4))
+    minimum_transfer_units: Mapped[Decimal] = mapped_column(Numeric(18, 6))
+    fractional_beneficial_units: Mapped[bool] = mapped_column(Boolean)
 
 
 class ShareMembership(Base):
@@ -304,6 +327,12 @@ class SharePayrollBatch(Base):
     expected_jpy: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     received_jpy: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     state: Mapped[str] = mapped_column(String)
+
+
+class SharePayrollRuleLink(Base):
+    __tablename__ = "share_payroll_rule_links"
+    batch_id: Mapped[str] = mapped_column(ForeignKey("share_payroll_batches.id"), primary_key=True)
+    rule_id: Mapped[str] = mapped_column(ForeignKey("shareholding_rule_versions.id"))
 
 
 class SharePayrollLine(Base):
@@ -357,6 +386,15 @@ class ShareTransferRequest(Base):
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class CustodySettlementConfirmation(Base):
+    __tablename__ = "custody_settlement_confirmations"
+    transfer_id: Mapped[str] = mapped_column(ForeignKey("share_transfer_requests.id"), primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("custody_accounts_v2.id"), index=True)
+    confirmation_reference: Mapped[str] = mapped_column(String, unique=True)
+    confirmed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    state: Mapped[str] = mapped_column(String)
+
+
 class PensionPlanV2(Base):
     __tablename__ = "pension_plans_v2"
     id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -403,6 +441,20 @@ class PensionFutureAllocation(Base):
     fund_id: Mapped[str] = mapped_column(ForeignKey("pension_funds.id"))
     percentage: Mapped[Decimal] = mapped_column(Numeric(7, 4))
     effective_period: Mapped[date] = mapped_column(Date)
+
+
+class PensionSwitchDraft(Base):
+    __tablename__ = "pension_switch_drafts"
+    __table_args__ = (UniqueConstraint("tenant_id", "employee_id", "idempotency_key"),)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), index=True)
+    from_fund_id: Mapped[str] = mapped_column(ForeignKey("pension_funds.id"))
+    to_fund_id: Mapped[str] = mapped_column(ForeignKey("pension_funds.id"))
+    units: Mapped[Decimal] = mapped_column(Numeric(18, 6))
+    idempotency_key: Mapped[str] = mapped_column(String)
+    state: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
 class PensionContributionRecord(Base):

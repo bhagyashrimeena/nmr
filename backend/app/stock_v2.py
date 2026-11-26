@@ -2,7 +2,7 @@
 import re
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import BaseModel, Field
@@ -10,12 +10,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .db import get_db
-from .models import Dividend, DividendDetail, Employee, Tenant
+from .models import Employee, Tenant
 from .security import ApiError, audit, require_admin, require_client
 from .v2_models import (
-    FinancialEvent, OperationalStatement, ReconciliationCase, ShareMembership,
-    SharePayrollBatch, SharePayrollLine, SharePurchaseAllocation, SharePurchaseCycle,
-    ShareTransferRequest, ShareholdingPlan, WorkflowTask, WorkflowTransition,
+    ContributionElection, CustodyAccountV2, CustodySettlementConfirmation, FinancialEvent,
+    OperationalStatement, ReconciliationCase,
+    ShareMembership, SharePayrollBatch, SharePayrollLine, SharePayrollRuleLink,
+    SharePurchaseAllocation, SharePurchaseCycle, ShareTransferRequest, ShareholdingPlan,
+    ShareholdingRuleVersion, WorkflowTask, WorkflowTransition,
 )
 from .v2_seed import SNAPSHOT, at_day
 
@@ -48,6 +50,15 @@ def membership(db: Session, tenant_id: str, employee_id: str):
     return plan, row
 
 
+def rule_for_period(db: Session, plan_id: str, period: date):
+    rule = db.scalar(select(ShareholdingRuleVersion).where(
+        ShareholdingRuleVersion.plan_id == plan_id,
+        ShareholdingRuleVersion.effective_on <= period).order_by(ShareholdingRuleVersion.effective_on.desc()))
+    if not rule:
+        raise ApiError(422, "PLAN_RULE_NOT_AVAILABLE", "No effective shareholding rule is available for this period.")
+    return rule
+
+
 def journal(db: Session, tenant_id: str, employee_id: str, service: str = "stock"):
     return db.scalars(select(FinancialEvent).where(FinancialEvent.tenant_id == tenant_id,
                                                     FinancialEvent.employee_id == employee_id,
@@ -77,8 +88,19 @@ def transfer_row(row: ShareTransferRequest):
             "state": row.state, "correlation_id": row.correlation_id, "submitted_at": row.submitted_at}
 
 
+def eligible_recipient(db: Session, tenant_id: str, employee_id: str, reference: str,
+                       plan: ShareholdingPlan):
+    account = db.get(CustodyAccountV2, reference)
+    if (not account or account.tenant_id != tenant_id or account.employee_id != employee_id
+            or account.status != "ACTIVE" or plan.issuer not in account.instrument):
+        raise ApiError(422, "RECIPIENT_ACCOUNT_NOT_ELIGIBLE",
+                       "A matching active securities account is required for this transfer.")
+    return account
+
+
 def stock_summary(db: Session, tenant_id: str, employee_id: str):
     plan, member = membership(db, tenant_id, employee_id)
+    rule = rule_for_period(db, plan.id, SNAPSHOT.date())
     shares, cash = balances(db, tenant_id, employee_id)
     posted_cash = db.scalar(select(func.sum(SharePayrollLine.amount_jpy))
                             .join(SharePayrollBatch, SharePayrollBatch.id == SharePayrollLine.batch_id)
@@ -97,16 +119,21 @@ def stock_summary(db: Session, tenant_id: str, employee_id: str):
     if cash != expected_cash or shares != expected_units:
         raise ApiError(409, "RECONCILIATION_FAILED", "Shareholding cash or units do not reconcile.")
     pending = sum((Decimal(row.units) for row in transfers if row.state not in {"COMPLETED", "REJECTED", "CANCELLED"}), Decimal("0"))
+    whole_available = max(shares - pending, Decimal("0")).to_integral_value(rounding=ROUND_DOWN)
     return {"tenant_id": tenant_id, "employee_id": employee_id, "as_of": SNAPSHOT.date(), "currency": "JPY",
+            "ownership_basis": "SHAREHOLDING_ASSOCIATION_BENEFICIAL_INTEREST",
             "snapshot_age_days": max((date.today() - SNAPSHOT.date()).days, 0),
             "plan": {"id": plan.id, "name": plan.name, "issuer": plan.issuer,
+                                            "rule_source_reference": rule.source_reference,
+                                            "rule_effective_on": rule.effective_on,
+                                            "fractional_beneficial_units": rule.fractional_beneficial_units,
                                             "next_purchase_date": plan.next_purchase_date, "status": plan.status,
                                             "incentive_percent": str(plan.incentive_percent),
                                             "minimum_monthly_jpy": money(plan.minimum_monthly_jpy),
                                             "maximum_monthly_jpy": money(plan.maximum_monthly_jpy)},
             "membership": {"id": member.id, "status": member.status, "joined_on": member.joined_on},
             "shares_held": units(shares), "uninvested_cash_jpy": money(cash),
-            "available_transfer_units": units(max(shares - pending, Decimal("0"))),
+            "available_transfer_units": units(whole_available),
             "posted_employee_cash_jpy": money(posted_cash or 0), "posted_incentive_cash_jpy": money(incentives or 0),
             "settled_purchase_cost_jpy": money(purchase_cost),
             "reconciled": True, "source_reference": member.id}
@@ -146,6 +173,9 @@ def client_contributions(request: Request, start: date | None = Query(None, alia
     result = {"tenant_id": claims["tenant_id"], "employee_id": claims["employee_id"],
               "as_of": SNAPSHOT.date(), "currency": "JPY",
               "contributions": [{"period": batch.period, "source_reference": batch.source_reference,
+                                 "rule_source_reference": (
+                                     db.get(ShareholdingRuleVersion, db.get(SharePayrollRuleLink, batch.id).rule_id).source_reference
+                                     if db.get(SharePayrollRuleLink, batch.id) else None),
                                  "amount_jpy": money(line.amount_jpy), "incentive_jpy": money(line.incentive_jpy),
                                  "state": line.state, "rejection_reason": line.rejection_reason}
                                 for line, batch in rows]}
@@ -180,13 +210,13 @@ def client_purchases(request: Request, start: date | None = Query(None, alias="f
 @router.get("/client/me/shareholding/dividends")
 def client_dividends(request: Request, db: Session = Depends(get_db), claims: dict = Depends(require_client("stock"))):
     membership(db, claims["tenant_id"], claims["employee_id"])
-    rows = db.scalars(select(Dividend).where(Dividend.employee_id == claims["employee_id"]).order_by(Dividend.payment_date.desc())).all()
+    rows = [row for row in journal(db, claims["tenant_id"], claims["employee_id"])
+            if row.event_type == "ASSOCIATION_DIVIDEND_POSTED"]
     result = {"tenant_id": claims["tenant_id"], "employee_id": claims["employee_id"],
               "as_of": SNAPSHOT.date(), "currency": "JPY",
-              "dividends": [{"id": row.id, "instrument": row.instrument,
-                             "record_date": db.get(DividendDetail, row.id).record_date if db.get(DividendDetail, row.id) else None,
-                             "payment_date": row.payment_date, "amount_jpy": money(row.amount_jpy),
-                             "state": row.status.upper()} for row in rows]}
+              "dividends": [{"id": row.id, "source_reference": row.source_reference,
+                             "payment_date": row.effective_at.date(), "amount_jpy": money(row.amount_jpy),
+                             "state": "POSTED"} for row in rows]}
     record_access(db, request, claims)
     return result
 
@@ -238,6 +268,11 @@ def client_transfer_draft(body: TransferDraft, request: Request,
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{4,59}", body.recipient_account_reference):
         record_access(db, request, claims, "denied", "INVALID_PLAN_RULE")
         raise ApiError(422, "INVALID_PLAN_RULE", "The recipient account reference is invalid.")
+    try:
+        eligible_recipient(db, tenant_id, employee_id, body.recipient_account_reference, plan)
+    except ApiError:
+        record_access(db, request, claims, "denied", "RECIPIENT_ACCOUNT_NOT_ELIGIBLE")
+        raise
     if member.status != "ACTIVE":
         record_access(db, request, claims, "denied", "STATE_CONFLICT")
         raise ApiError(409, "STATE_CONFLICT", "The membership is not active.")
@@ -273,12 +308,13 @@ TRANSFER_STATES = {
 class TransferReview(BaseModel):
     state: str
     reason: str = Field(min_length=3, max_length=200)
+    confirmation_reference: str | None = None
 
 
 class PayrollLineInput(BaseModel):
     employee_id: str
     amount_jpy: Decimal
-    incentive_jpy: Decimal = Decimal("0")
+    incentive_jpy: Decimal | None = None
 
 
 class PayrollBatchInput(BaseModel):
@@ -303,10 +339,17 @@ def admin_receive_payroll(tenant_id: str, body: PayrollBatchInput, request: Requ
                           db: Session = Depends(get_db), claims: dict = Depends(require_admin(write=True))):
     admin_context(request, claims, "receive_payroll")
     plan = tenant_plan(db, tenant_id)
+    rule = rule_for_period(db, plan.id, body.period)
     if body.period.day != 1 or body.period > SNAPSHOT.date():
         raise ApiError(422, "INVALID_DATE_RANGE", "Payroll period must be a completed month.")
-    if body.expected_jpy < 0 or any(line.amount_jpy <= 0 or line.incentive_jpy < 0 for line in body.lines):
+    if body.expected_jpy < 0 or any(line.amount_jpy <= 0 or
+                                    (line.incentive_jpy is not None and line.incentive_jpy < 0)
+                                    for line in body.lines):
         raise ApiError(422, "INVALID_AMOUNT", "Payroll amounts must be positive.")
+    for line in body.lines:
+        expected_incentive = (line.amount_jpy * Decimal(rule.incentive_percent) / 100).quantize(Decimal("0.01"))
+        if line.incentive_jpy is not None and line.incentive_jpy != expected_incentive:
+            raise ApiError(422, "INVALID_PLAN_RULE", "Employer incentive does not match the effective plan rule.")
     if len({line.employee_id for line in body.lines}) != len(body.lines):
         raise ApiError(409, "DUPLICATE_REQUEST", "An employee appears more than once in the batch.")
     existing = db.scalar(select(SharePayrollBatch).where(
@@ -326,10 +369,12 @@ def admin_receive_payroll(tenant_id: str, body: PayrollBatchInput, request: Requ
     db.add(SharePayrollBatch(id=batch_id, plan_id=plan.id, period=body.period,
                              source_reference=body.source_reference, expected_jpy=body.expected_jpy,
                              received_jpy=received, state="RECEIVED"))
+    db.add(SharePayrollRuleLink(batch_id=batch_id, rule_id=rule.id))
     for line in body.lines:
+        expected_incentive = (line.amount_jpy * Decimal(rule.incentive_percent) / 100).quantize(Decimal("0.01"))
         db.add(SharePayrollLine(id=f"{batch_id}-{line.employee_id}", batch_id=batch_id,
                                 employee_id=line.employee_id, amount_jpy=line.amount_jpy,
-                                incentive_jpy=line.incentive_jpy, state="RECEIVED"))
+                                incentive_jpy=expected_incentive, state="RECEIVED"))
     audit(db, request, actor=claims["sub"], tenant_id=tenant_id, employee_id=None,
           service="stock", outcome="changed", reason="PAYROLL_RECEIVED")
     return {"batch_id": batch_id, "state": "RECEIVED", "received_jpy": money(received)}
@@ -354,8 +399,14 @@ def admin_review_payroll(tenant_id: str, batch_id: str, body: StateInput, reques
             raise ApiError(409, "RECONCILIATION_FAILED", "Received payroll does not match the expected amount.")
         for line in lines:
             plan_membership = membership(db, tenant_id, line.employee_id)[1]
+            election = db.scalar(select(ContributionElection).where(
+                ContributionElection.membership_id == plan_membership.id,
+                ContributionElection.effective_period <= batch.period,
+                ContributionElection.state == "EFFECTIVE").order_by(ContributionElection.effective_period.desc()))
             if plan_membership.status != "ACTIVE" or not plan.minimum_monthly_jpy <= line.amount_jpy <= plan.maximum_monthly_jpy:
                 raise ApiError(422, "INVALID_PLAN_RULE", "A payroll line is outside membership or plan rules.")
+            if not election or line.amount_jpy != election.monthly_jpy:
+                raise ApiError(409, "RECONCILIATION_FAILED", "Payroll amount does not match the effective election.")
             line.state = "VALIDATED"
     elif body.state == "POSTED":
         for line in lines:
@@ -493,10 +544,22 @@ def admin_review_transfer(tenant_id: str, request_id: str, body: TransferReview,
         raise ApiError(409, "STATE_CONFLICT", "This transfer state change is not allowed.")
     previous = row.state
     if body.state == "COMPLETED":
+        account = eligible_recipient(db, tenant_id, row.employee_id, row.recipient_account_reference,
+                                     tenant_plan(db, tenant_id))
+        if not body.confirmation_reference or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]{7,79}", body.confirmation_reference):
+            raise ApiError(422, "CONFIRMATION_REQUIRED", "A valid settlement confirmation reference is required.")
+        if db.scalar(select(CustodySettlementConfirmation).where(
+            CustodySettlementConfirmation.confirmation_reference == body.confirmation_reference)):
+            raise ApiError(409, "DUPLICATE_REQUEST", "This settlement confirmation has already been recorded.")
         shares, _ = balances(db, tenant_id, row.employee_id)
         if Decimal(row.units) > shares:
             raise ApiError(409, "RECONCILIATION_FAILED", "The transfer exceeds current shares.")
         when = SNAPSHOT
+
+        db.add(CustodySettlementConfirmation(transfer_id=row.id, account_id=account.id,
+                                             confirmation_reference=body.confirmation_reference,
+                                             confirmed_at=when, state="SETTLED_CONFIRMED"))
         for service, event_type, quantity in [
             ("stock", "TRANSFER_OUT", -Decimal(row.units)),
             ("custody", "TRANSFER_IN", Decimal(row.units)),
@@ -524,6 +587,7 @@ def admin_stock_operations(tenant_id: str, request: Request, db: Session = Depen
                            claims: dict = Depends(require_admin())):
     admin_context(request, claims, "view_stock_operations")
     plan = tenant_plan(db, tenant_id)
+    rule = rule_for_period(db, plan.id, SNAPSHOT.date())
     members = db.scalars(select(ShareMembership).where(ShareMembership.plan_id == plan.id).order_by(ShareMembership.employee_id)).all()
     batches = db.scalars(select(SharePayrollBatch).where(SharePayrollBatch.plan_id == plan.id).order_by(SharePayrollBatch.period.desc())).all()
     cycles = db.scalars(select(SharePurchaseCycle).where(SharePurchaseCycle.plan_id == plan.id).order_by(SharePurchaseCycle.trade_date.desc())).all()
@@ -534,6 +598,9 @@ def admin_stock_operations(tenant_id: str, request: Request, db: Session = Depen
                                                                 OperationalStatement.service == "stock")).all()
     result = {"tenant_id": tenant_id, "as_of": SNAPSHOT.date(),
               "plan": {"id": plan.id, "name": plan.name, "issuer": plan.issuer,
+                       "rule_source_reference": rule.source_reference,
+                       "rule_effective_on": rule.effective_on,
+                       "fractional_beneficial_units": rule.fractional_beneficial_units,
                        "minimum_monthly_jpy": money(plan.minimum_monthly_jpy),
                        "maximum_monthly_jpy": money(plan.maximum_monthly_jpy),
                        "incentive_percent": str(plan.incentive_percent),

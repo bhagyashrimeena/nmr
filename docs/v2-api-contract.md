@@ -22,14 +22,14 @@ The provider administrator uses `POST /api/v1/auth/admin-token` with username `n
 | Service | Routes | Primary content |
 |---|---|---|
 | Stock ownership | `GET /client/me/shareholding/{summary,contributions,purchases,dividends,ledger}`; `GET /client/me/shareholding/transfers/{request_id}`; `POST /client/me/shareholding/transfer-drafts` | Plan balance, posted payroll cash, settled purchases, share events, transfer state |
-| Pension | `GET /client/me/pension/{account,positions,contributions,funds,allocation,projections}`; `GET /client/me/pension/instructions/{instruction_id}`; `POST /client/me/pension/allocation-drafts` | Account and fund units, NAV, future contribution allocation |
+| Pension | `GET /client/me/pension/{account,positions,contributions,funds,allocation,projections}`; `GET /client/me/pension/instructions/{instruction_id}`; `POST /client/me/pension/allocation-drafts`; `POST /client/me/pension/switch-drafts`; `GET /client/me/pension/switch-drafts/{draft_id}` | Account and fund units, NAV, future contribution allocation, separate holding-switch drafts |
 | Equity | `GET /client/me/equity/{grants,vesting,options,releases,statement}`; `GET /client/me/equity/grants/{grant_id}`; `POST /client/me/equity/exercise-drafts` | Issued awards, tranches, exercise eligibility, release history |
 | Custody | `GET /client/me/custody/{positions,history,dividends,actions,transfers,settlements,statement}` | Separate custody inventory, cash events, entitlements, transfer status |
-| Wellness | `GET /client/wellness/{education,progress,seminars}`; `GET /client/wellness/benefits/{benefit_key}`; `GET /client/wellness/calculators/monthly-savings` | Published education, source-backed tenant rules, learning records, calculator |
+| Wellness | `GET /client/wellness/{education,progress,seminars,benefit-comparison}`; `GET /client/wellness/benefits/{benefit_key}`; `GET /client/wellness/calculators/monthly-savings` | Published education, source-backed tenant rules, learning records, calculator |
 
-Prefix each listed route with `/api/v2`. If the master switch is off, new external calls return `403 MCP_ACCESS_DISABLED`. If a service switch is off, its routes return `403 SERVICE_ACCESS_DISABLED`, including draft and calculator routes. An active employee must also be allowed to use the service. Protected responses use `Cache-Control: no-store` and carry an `X-Request-ID` header.
+Prefix each listed route with `/api/v2`. If the master switch is off, new external calls return `403 MCP_ACCESS_DISABLED`. If a service switch is off, its routes return `403 SERVICE_ACCESS_DISABLED`, including draft and calculator routes. An inactive tenant is denied with `403 TENANT_INACTIVE`. An active employee must also be allowed to use the service. A wellness benefit that incorporates stock or pension terms additionally requires access to that underlying service; the comparison requires both. Protected responses use `Cache-Control: no-store` and carry an `X-Request-ID` header.
 
-The read responses have a fixed `as_of` date of `2026-11-26` for operational records. JPY amounts and quantities are decimal strings in V2 financial event views. A released award is separate from a custody delivery confirmation. A pension allocation instruction changes future contributions only, not existing fund holdings. An announced dividend does not increase cash. An association transfer decreases stock units and credits custody units under the same correlation ID only after completion.
+The read responses have a fixed `as_of` date of `2026-11-26` for operational records. JPY amounts and quantities are decimal strings in V2 financial event views. A released award is separate from a custody delivery confirmation. A pension allocation instruction changes future contributions only, not existing fund holdings. A pension switch draft has `effect: DRAFT_ONLY` and does not change either holdings or the future allocation. An announced dividend does not increase cash. An association transfer decreases stock units and credits custody units under the same correlation ID only after a settlement confirmation is supplied. The recipient account must be active, belong to the signed employee and tenant, and support the plan security. Association dividends are separate from custody dividends.
 
 ### Examples
 
@@ -38,7 +38,7 @@ GET /api/v2/client/me/shareholding/summary
 Authorization: Bearer <employee-token>
 ```
 
-A successful `EMP-001` response includes `shares_held: "120.000000"` and `uninvested_cash_jpy: "12000.00"`. `EMP-002` has a rejected November payroll line with no cash or share effect. The linked stock and custody views should be read independently; their opening holdings represent separate inventories.
+A successful `EMP-001` response includes `shares_held: "120.000000"` and `uninvested_cash_jpy: "12000.00"`. `available_transfer_units` counts whole shares while the Toyota association can hold fractional beneficial units. `EMP-002` has a rejected November payroll line with no cash or share effect. The linked stock and custody views should be read independently; their opening holdings represent separate inventories. New payroll incentives are derived from the rule effective for the payroll period and linked to its source reference.
 
 ```http
 GET /api/v2/client/wellness/benefits/shareholding_incentive
@@ -66,11 +66,11 @@ All routes below begin `/api/v2/admin/tenants/{tenant_id}`. Admin users can also
 | Custody | `GET /custody/operations` | `PATCH /custody/actions/{action_id}`; `PATCH /custody/dividends/{dividend_id}` |
 | Wellness | `GET /wellness/operations` | `PATCH /wellness/content/{content_id}` |
 
-State transitions require a nonempty review reason. Invalid transitions return `409 STATE_CONFLICT`. An operator may view all tenant records through admin routes, but cannot access a record from another tenant through its ID. The client APIs always select the signed employee's own record.
+State transitions require a nonempty review reason. Completing a stock transfer additionally requires a unique `confirmation_reference` of 8-80 characters. Invalid transitions return `409 STATE_CONFLICT`. An operator may view all tenant records through admin routes, but cannot access a record from another tenant through its ID. The client APIs always select the signed employee's own record. Pension operations include employee switch drafts for review; no switch execution route exists.
 
 ## Errors and audit
 
-Errors use `{ "error": { "code": "...", "message": "...", "request_id": "..." } }`. Common codes are `UNAUTHENTICATED` (401), `INSUFFICIENT_PERMISSIONS` (403), `RESOURCE_NOT_ACCESSIBLE` (403), `MCP_ACCESS_DISABLED` (403), `SERVICE_ACCESS_DISABLED` (403), `RESOURCE_NOT_FOUND` (404), `BENEFIT_RULE_NOT_AVAILABLE` (404), `DUPLICATE_REQUEST` (409), `STATE_CONFLICT` (409), and `INVALID_REQUEST` (422). Domain validation may also return `RECONCILIATION_FAILED`, `UNITS_UNAVAILABLE`, or `INVALID_PLAN_RULE`. V2 protected calls write request ID, actor, scopes, service, operation, outcome, reason, tenant, and employee to the operation audit table. Token strings and passwords are never written there.
+Errors use `{ "error": { "code": "...", "message": "...", "request_id": "..." } }`. Common codes are `UNAUTHENTICATED` (401), `INSUFFICIENT_PERMISSIONS` (403), `RESOURCE_NOT_ACCESSIBLE` (403), `MCP_ACCESS_DISABLED` (403), `SERVICE_ACCESS_DISABLED` (403), `TENANT_INACTIVE` (403), `RESOURCE_NOT_FOUND` (404), `BENEFIT_RULE_NOT_AVAILABLE` (404), `DUPLICATE_REQUEST` (409), `STATE_CONFLICT` (409), and `INVALID_REQUEST` (422). Domain validation may also return `RECONCILIATION_FAILED`, `UNITS_UNAVAILABLE`, `INVALID_PLAN_RULE`, `RECIPIENT_ACCOUNT_NOT_ELIGIBLE`, or `CONFIRMATION_REQUIRED`. V2 protected calls write request ID, actor, scopes, service, operation, outcome, reason, tenant, and employee to the operation audit table. Token strings and passwords are never written there.
 
 ## Integration boundary
 

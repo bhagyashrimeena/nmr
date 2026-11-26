@@ -30,13 +30,13 @@ const tabs: Record<ServiceKey, string[]> = {
           'Plan operations', 'Members', 'Payroll batches', 'Purchase cycles', 'Transfer requests', 'Exceptions'],
   pension: ['Overview', 'Contributions', 'Valuations', 'Projection', 'Statements',
             'Plan operations', 'Participants', 'Fund positions', 'Investment funds',
-            'Instruction queue', 'Exceptions', 'Reports'],
+            'Instruction queue', 'Switch drafts', 'Exceptions', 'Reports'],
   wellness: ['Resources', 'Progress', 'Savings calculator', 'Program overview', 'Content library', 'Benefit rules', 'Seminars'],
   custody: ['Overview', 'Valuations', 'Dividends', 'Corporate actions', 'Settlements', 'Statements', 'Account registry', 'Position detail', 'Dividend processing', 'Action register', 'Settlement monitor'],
   equity: ['Awards', 'Vesting', 'Statements', 'Equity plan', 'Grant register', 'Vesting schedule', 'Release queue', 'Equity exceptions'],
 }
 const stockOperationsTabs = ['Plan operations', 'Members', 'Payroll batches', 'Purchase cycles', 'Transfer requests', 'Exceptions']
-const pensionOperationsTabs = ['Plan operations', 'Participants', 'Fund positions', 'Investment funds', 'Instruction queue', 'Exceptions', 'Reports']
+const pensionOperationsTabs = ['Plan operations', 'Participants', 'Fund positions', 'Investment funds', 'Instruction queue', 'Switch drafts', 'Exceptions', 'Reports']
 const equityOperationsTabs = ['Equity plan', 'Grant register', 'Vesting schedule', 'Release queue', 'Equity exceptions']
 const custodyOperationsTabs = ['Account registry', 'Position detail', 'Dividend processing', 'Action register', 'Settlement monitor']
 const wellnessOperationsTabs = ['Program overview', 'Content library', 'Benefit rules', 'Seminars']

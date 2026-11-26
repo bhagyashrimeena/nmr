@@ -53,16 +53,17 @@ def test_stock_transfer_moves_exact_units_between_services(demo):
     draft = client.post("/api/v2/client/me/shareholding/transfer-drafts",
                         headers={**auth(employee_token(scopes=["read:finance", "draft:stock"])),
                                  "Idempotency-Key": "custody-transfer-001"},
-                        json={"units": "5", "recipient_account_reference": "SEC-EMP-001"}).json()
+                        json={"units": "5", "recipient_account_reference": "CUST-EMP-001"}).json()
     pending = client.get(PREFIX + "/positions", headers=employee).json()
     assert pending["available_units"] == str(custody_before.quantize(Decimal("0.000001")))
     review = "/api/v2/admin/tenants/toyota-demo/shareholding/transfers/" + draft["request_id"]
     for state in ["ELIGIBILITY_CHECKED", "CORPORATE_APPROVED", "PROVIDER_FORWARDED", "COMPLETED"]:
-        assert client.patch(review, headers=admin, json={"state": state, "reason": "Operations review"}).status_code == 200
+        assert client.patch(review, headers=admin, json={"state": state, "reason": "Operations review",
+                                                        "confirmation_reference": "SETTLE-EMP001-002" if state == "COMPLETED" else None}).status_code == 200
     stock_after = Decimal(client.get("/api/v2/client/me/shareholding/summary", headers=employee).json()["shares_held"])
     custody_after = Decimal(client.get(PREFIX + "/positions", headers=employee).json()["available_units"])
     assert stock_before - stock_after == custody_after - custody_before == 5
-    assert client.get(PREFIX + "/settlements", headers=employee).json()["settlements"][-1]["settlement_state"] == "SETTLED"
+    assert client.get(PREFIX + "/settlements", headers=employee).json()["settlements"][-1]["settlement_state"] == "SETTLED_CONFIRMED"
 
 
 def test_custody_switch_blocks_all_client_routes(demo):

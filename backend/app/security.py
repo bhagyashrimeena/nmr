@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from .catalog import SERVICES
 from .db import get_db
 from .models import AuditEvent, Employee, McpSetting, Tenant, TenantServiceSetting
-from .v2_models import OperationAudit
+from .v2_models import OperationAudit, TenantOperationalStatus
 
 ISSUER = "nmr-demo"
 AUDIENCE = "nmr-workplace-api"
@@ -106,6 +106,9 @@ def require_client(service: str, operation: str = "read"):
             deny("RESOURCE_NOT_ACCESSIBLE", "Employee identity claims are inconsistent.")
         if not db.get(Tenant, tenant_id):
             deny("RESOURCE_NOT_ACCESSIBLE", "Tenant is not available.")
+        tenant_status = db.get(TenantOperationalStatus, tenant_id)
+        if not tenant_status or tenant_status.status != "ACTIVE":
+            deny("TENANT_INACTIVE", "The corporate client is not active.")
         setting = db.get(McpSetting, tenant_id)
         if not setting or not setting.enabled:
             deny("MCP_ACCESS_DISABLED", "External access is disabled for this client.")

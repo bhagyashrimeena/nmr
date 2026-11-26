@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from .v2_models import WellnessBenefitRule, WellnessContentV2, WellnessSeminar
+from .v2_models import WellnessBenefitAccess, WellnessBenefitRule, WellnessContentV2, WellnessSeminar
 
 
 def seed_wellness(db: Session):
@@ -27,6 +27,16 @@ def seed_wellness(db: Session):
                                    rule_text="The employer adds 5% to eligible monthly shareholding contributions.",
                                    source_reference="TOYOTA-SHARE-01/RULES/2026", effective_date=date(2026, 1, 1),
                                    review_expires_on=date(2027, 12, 31)))
+    if not db.get(WellnessBenefitAccess, "BEN-TOYOTA-SHARE"):
+        db.add(WellnessBenefitAccess(rule_id="BEN-TOYOTA-SHARE", underlying_service="stock"))
+    if not db.get(WellnessBenefitRule, "BEN-TOYOTA-DC"):
+        db.add(WellnessBenefitRule(id="BEN-TOYOTA-DC", tenant_id="toyota-demo",
+                                   benefit_key="corporate_pension_contributions",
+                                   rule_text="The employer contributes to the corporate defined-contribution plan. Participant top-ups are permitted under this plan.",
+                                   source_reference="TOYOTA-DC-01/RULES/2026", effective_date=date(2026, 1, 1),
+                                   review_expires_on=date(2027, 12, 31)))
+    if not db.get(WellnessBenefitAccess, "BEN-TOYOTA-DC"):
+        db.add(WellnessBenefitAccess(rule_id="BEN-TOYOTA-DC", underlying_service="pension"))
     if not db.get(WellnessSeminar, "SEM-TOYOTA-01"):
         db.add(WellnessSeminar(id="SEM-TOYOTA-01", tenant_id="toyota-demo",
                                title="Workplace savings and benefits", starts_at=datetime(2026, 12, 8, 9, tzinfo=timezone.utc),

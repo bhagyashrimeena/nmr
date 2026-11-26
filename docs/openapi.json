@@ -968,6 +968,108 @@
         }
       }
     },
+    "/api/v2/client/me/pension/switch-drafts": {
+      "post": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Switch Draft",
+        "operationId": "client_switch_draft_api_v2_client_me_pension_switch_drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 80,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchDraftInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/client/me/pension/switch-drafts/{draft_id}": {
+      "get": {
+        "tags": [
+          "Pension operations"
+        ],
+        "summary": "Client Switch Detail",
+        "operationId": "client_switch_detail_api_v2_client_me_pension_switch_drafts__draft_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/tenants/{tenant_id}/pension/instructions/{instruction_id}": {
       "patch": {
         "tags": [
@@ -1926,6 +2028,30 @@
             }
           }
         }
+      }
+    },
+    "/api/v2/client/wellness/benefit-comparison": {
+      "get": {
+        "tags": [
+          "Financial wellness v2"
+        ],
+        "summary": "Client Benefit Comparison",
+        "operationId": "client_benefit_comparison_api_v2_client_wellness_benefit_comparison_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v2/client/wellness/progress": {
@@ -4949,10 +5075,12 @@
               },
               {
                 "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
-            "title": "Incentive Jpy",
-            "default": "0"
+            "title": "Incentive Jpy"
           }
         },
         "type": "object",
@@ -5733,6 +5861,37 @@
         ],
         "title": "StockStatement"
       },
+      "SwitchDraftInput": {
+        "properties": {
+          "from_fund_id": {
+            "type": "string",
+            "title": "From Fund Id"
+          },
+          "to_fund_id": {
+            "type": "string",
+            "title": "To Fund Id"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_fund_id",
+          "to_fund_id",
+          "units"
+        ],
+        "title": "SwitchDraftInput"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -5794,6 +5953,17 @@
             "maxLength": 200,
             "minLength": 3,
             "title": "Reason"
+          },
+          "confirmation_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Reference"
           }
         },
         "type": "object",

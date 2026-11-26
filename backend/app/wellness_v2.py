@@ -8,9 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .db import get_db
-from .models import WellnessProgress
+from .models import Employee, TenantServiceSetting, WellnessProgress
 from .security import ApiError, audit, require_admin, require_client
-from .v2_models import WellnessBenefitRule, WellnessContentV2, WellnessSeminar
+from .v2_models import WellnessBenefitAccess, WellnessBenefitRule, WellnessContentV2, WellnessSeminar
 
 router = APIRouter(prefix="/api/v2", tags=["Financial wellness v2"])
 AS_OF = date(2026, 11, 26)
@@ -46,21 +46,52 @@ def client_education(request: Request, category: str | None = Query(None, max_le
     return {"as_of": AS_OF, "items": items}
 
 
-@router.get("/client/wellness/benefits/{benefit_key}")
-def client_benefit(benefit_key: str, request: Request, db: Session = Depends(get_db),
-                   claims: dict = Depends(require_client("wellness"))):
+def resolve_benefit(db: Session, claims: dict, benefit_key: str):
     rule = db.scalar(select(WellnessBenefitRule).where(
         WellnessBenefitRule.tenant_id == claims["tenant_id"],
         WellnessBenefitRule.benefit_key == benefit_key,
         WellnessBenefitRule.effective_date <= AS_OF,
         WellnessBenefitRule.review_expires_on >= AS_OF))
     if not rule:
-        client_audit(db, request, claims, "denied", "BENEFIT_RULE_NOT_AVAILABLE")
         raise ApiError(404, "BENEFIT_RULE_NOT_AVAILABLE", "No current rule is available for this benefit.")
-    client_audit(db, request, claims)
+    policy = db.get(WellnessBenefitAccess, rule.id)
+    if not policy:
+        raise ApiError(404, "BENEFIT_RULE_NOT_AVAILABLE", "No disclosure policy is available for this benefit.")
+    service_setting = db.scalar(select(TenantServiceSetting).where(
+        TenantServiceSetting.tenant_id == claims["tenant_id"],
+        TenantServiceSetting.service == policy.underlying_service))
+    if not service_setting or not service_setting.enabled:
+        raise ApiError(403, "SERVICE_ACCESS_DISABLED", "Access to this benefit service is disabled.")
+    employee = db.get(Employee, claims["employee_id"])
+    if policy.underlying_service not in employee.allowed_services.split(","):
+        raise ApiError(403, "INSUFFICIENT_PERMISSIONS", "This benefit is not available to the employee.")
     return {"benefit_key": benefit_key, "explanation": rule.rule_text,
             "source_reference": rule.source_reference, "effective_date": rule.effective_date,
             "review_expires_on": rule.review_expires_on}
+
+
+def audited_benefits(db: Session, request: Request, claims: dict, keys: list[str]):
+    try:
+        items = [resolve_benefit(db, claims, key) for key in keys]
+    except ApiError as exc:
+        client_audit(db, request, claims, "denied", exc.code)
+        raise
+    client_audit(db, request, claims)
+    return items
+
+
+@router.get("/client/wellness/benefits/{benefit_key}")
+def client_benefit(benefit_key: str, request: Request, db: Session = Depends(get_db),
+                   claims: dict = Depends(require_client("wellness"))):
+    return audited_benefits(db, request, claims, [benefit_key])[0]
+
+
+@router.get("/client/wellness/benefit-comparison")
+def client_benefit_comparison(request: Request, db: Session = Depends(get_db),
+                              claims: dict = Depends(require_client("wellness"))):
+    keys = ["shareholding_incentive", "corporate_pension_contributions"]
+    return {"as_of": AS_OF, "benefits": audited_benefits(db, request, claims, keys),
+            "comparison": "The shareholding plan purchases company shares; the corporate pension invests contributions through its fund menu. Account values and rules are separate."}
 
 
 @router.get("/client/wellness/progress")
@@ -139,6 +170,8 @@ def admin_wellness_operations(tenant_id: str, request: Request, db: Session = De
     return {"tenant_id": tenant_id, "as_of": AS_OF,
             "content": [content_json(x) for x in items],
             "benefit_rules": [{"id": x.id, "benefit_key": x.benefit_key,
+                               "underlying_service": db.get(WellnessBenefitAccess, x.id).underlying_service
+                               if db.get(WellnessBenefitAccess, x.id) else None,
                                "rule_text": x.rule_text, "source_reference": x.source_reference,
                                "effective_date": x.effective_date, "review_expires_on": x.review_expires_on} for x in rules],
             "seminars": [{"id": x.id, "title": x.title, "starts_at": x.starts_at,

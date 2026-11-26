@@ -15,7 +15,7 @@ from .security import ApiError, audit, require_admin, require_client
 from .v2_models import (
     FinancialEvent, OperationalStatement, PensionAllocationInstruction,
     PensionContributionRecord, PensionFund, PensionFundPosition, PensionFutureAllocation,
-    PensionInstructionLine, PensionNav, PensionPlanV2, ReconciliationCase,
+    PensionInstructionLine, PensionNav, PensionPlanV2, PensionSwitchDraft, ReconciliationCase,
 )
 from .v2_seed import SNAPSHOT
 
@@ -224,6 +224,65 @@ def client_allocation_draft(body: AllocationDraft, request: Request,
     return instruction_json(db, row)
 
 
+class SwitchDraftInput(BaseModel):
+    from_fund_id: str
+    to_fund_id: str
+    units: Decimal = Field(gt=0)
+
+
+def switch_json(row: PensionSwitchDraft):
+    return {"id": row.id, "employee_id": row.employee_id,
+            "from_fund_id": row.from_fund_id, "to_fund_id": row.to_fund_id,
+            "units": str(row.units), "state": row.state, "effect": "DRAFT_ONLY"}
+
+
+@router.post("/client/me/pension/switch-drafts", status_code=201)
+def client_switch_draft(body: SwitchDraftInput, request: Request,
+                        idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=80),
+                        db: Session = Depends(get_db),
+                        claims: dict = Depends(require_client("pension", "draft"))):
+    tenant_id, employee_id = claims["tenant_id"], claims["employee_id"]
+    plan = account_for_employee(db, tenant_id, employee_id)
+    existing = db.scalar(select(PensionSwitchDraft).where(
+        PensionSwitchDraft.tenant_id == tenant_id, PensionSwitchDraft.employee_id == employee_id,
+        PensionSwitchDraft.idempotency_key == idempotency_key))
+    if existing:
+        if (existing.from_fund_id, existing.to_fund_id, existing.units) != (
+            body.from_fund_id, body.to_fund_id, body.units):
+            client_audit(db, request, claims, "denied", "DUPLICATE_REQUEST")
+            raise ApiError(409, "DUPLICATE_REQUEST", "Request key was already used for a different switch draft.")
+        client_audit(db, request, claims)
+        return switch_json(existing)
+    source = db.get(PensionFund, body.from_fund_id)
+    destination = db.get(PensionFund, body.to_fund_id)
+    position = db.scalar(select(PensionFundPosition).where(
+        PensionFundPosition.employee_id == employee_id,
+        PensionFundPosition.fund_id == body.from_fund_id))
+    if (not source or not destination or source.plan_id != plan.id or destination.plan_id != plan.id
+            or not destination.eligible or source.id == destination.id or not position
+            or body.units > position.units):
+        client_audit(db, request, claims, "denied", "SWITCH_NOT_ELIGIBLE")
+        raise ApiError(422, "SWITCH_NOT_ELIGIBLE", "The requested switch is outside current holdings or plan rules.")
+    row = PensionSwitchDraft(id="SWD-" + uuid.uuid4().hex[:12].upper(), tenant_id=tenant_id,
+                             employee_id=employee_id, from_fund_id=source.id,
+                             to_fund_id=destination.id, units=body.units,
+                             idempotency_key=idempotency_key, state="DRAFT")
+    db.add(row)
+    client_audit(db, request, claims, "changed", "SWITCH_DRAFT_CREATED")
+    return switch_json(row)
+
+
+@router.get("/client/me/pension/switch-drafts/{draft_id}")
+def client_switch_detail(draft_id: str, request: Request, db: Session = Depends(get_db),
+                         claims: dict = Depends(require_client("pension"))):
+    row = db.get(PensionSwitchDraft, draft_id)
+    if not row or row.tenant_id != claims["tenant_id"] or row.employee_id != claims["employee_id"]:
+        client_audit(db, request, claims, "denied", "RESOURCE_NOT_ACCESSIBLE")
+        raise ApiError(404, "RESOURCE_NOT_FOUND", "Switch draft is not available.")
+    client_audit(db, request, claims)
+    return switch_json(row)
+
+
 class InstructionReview(BaseModel):
     state: str
     reason: str = Field(min_length=3, max_length=200)
@@ -272,6 +331,8 @@ def admin_pension_operations(tenant_id: str, request: Request, db: Session = Dep
                                                         ReconciliationCase.service == "pension")).all()
     instructions = db.scalars(select(PensionAllocationInstruction).where(
         PensionAllocationInstruction.tenant_id == tenant_id)).all()
+    switch_drafts = db.scalars(select(PensionSwitchDraft).where(
+        PensionSwitchDraft.tenant_id == tenant_id)).all()
     statements = db.scalars(select(OperationalStatement).where(
         OperationalStatement.tenant_id == tenant_id, OperationalStatement.service == "pension")).all()
     result = {"tenant_id": tenant_id, "as_of": SNAPSHOT.date(),
@@ -286,6 +347,7 @@ def admin_pension_operations(tenant_id: str, request: Request, db: Session = Dep
               "exceptions": [{"id": row.id, "employee_id": row.employee_id, "break_type": row.break_type,
                               "source_reference": row.source_reference, "status": row.status} for row in cases],
               "instructions": [instruction_json(db, row) for row in instructions],
+              "switch_drafts": [switch_json(row) for row in switch_drafts],
               "statements": [{"id": row.id, "employee_id": row.employee_id,
                               "period": row.period, "as_of": row.as_of} for row in statements]}
     audit(db, request, actor=claims["sub"], tenant_id=tenant_id, employee_id=None,

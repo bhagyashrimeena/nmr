@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from .db import get_db
 from .security import ApiError, audit, require_admin, require_client
 from .v2_models import (CustodyAccountV2, CustodyActionV2, CustodyDividendV2,
+                        CustodySettlementConfirmation,
                         FinancialEvent, OperationalStatement, ShareTransferRequest)
 from .v2_seed import SNAPSHOT
 
@@ -44,6 +45,8 @@ def position_json(db, account):
     cash = sum((x.amount_jpy for x in events), Decimal("0"))
     return {"account_id": account.id, "employee_id": account.employee_id,
             "instrument": account.instrument, "security_id": account.security_id,
+            "ownership_basis": "INDIVIDUAL_SECURITIES_ACCOUNT",
+            "opening_source_reference": f"CU-OPEN-{account.employee_id}",
             "as_of": AS_OF, "available_units": str(units), "cash_jpy": str(cash),
             "pending_transfer_units": str(sum((Decimal(x.units) for x in db.scalars(
                 select(ShareTransferRequest).where(ShareTransferRequest.tenant_id == account.tenant_id,
@@ -79,10 +82,12 @@ def transfers_for(db, account):
         ShareTransferRequest.employee_id == account.employee_id)))
 
 
-def transfer_json(row):
+def transfer_json(db, row):
+    confirmation = db.get(CustodySettlementConfirmation, row.id)
     return {"id": row.id, "employee_id": row.employee_id, "units": str(row.units),
             "state": row.state, "correlation_id": row.correlation_id,
-            "settlement_state": "SETTLED" if row.state == "COMPLETED" else "PENDING"}
+            "settlement_state": confirmation.state if confirmation else "PENDING",
+            "confirmation_reference": confirmation.confirmation_reference if confirmation else None}
 
 
 @router.get("/client/me/custody/positions")
@@ -125,7 +130,7 @@ def client_actions(request: Request, db: Session = Depends(get_db),
 def client_transfers(request: Request, db: Session = Depends(get_db),
                      claims: dict = Depends(require_client("custody"))):
     account = account_for(db, claims["tenant_id"], claims["employee_id"])
-    result = {"account_id": account.id, "transfers": [transfer_json(x) for x in transfers_for(db, account)]}
+    result = {"account_id": account.id, "transfers": [transfer_json(db, x) for x in transfers_for(db, account)]}
     client_audit(db, request, claims)
     return result
 
@@ -134,7 +139,7 @@ def client_transfers(request: Request, db: Session = Depends(get_db),
 def client_settlements(request: Request, db: Session = Depends(get_db),
                        claims: dict = Depends(require_client("custody"))):
     account = account_for(db, claims["tenant_id"], claims["employee_id"])
-    result = {"account_id": account.id, "settlements": [transfer_json(x) for x in transfers_for(db, account)]}
+    result = {"account_id": account.id, "settlements": [transfer_json(db, x) for x in transfers_for(db, account)]}
     client_audit(db, request, claims)
     return result
 
@@ -169,7 +174,8 @@ def review_action(tenant_id: str, action_id: str, body: ReviewInput, request: Re
         raise ApiError(409, "STATE_CONFLICT", "Corporate action state change is not allowed.")
     account = db.get(CustodyAccountV2, row.account_id)
     if body.state == "ENTITLEMENT_CAPTURED":
-        row.eligible_units = Decimal(position_json(db, account)["available_units"])
+        row.eligible_units = sum((event.quantity for event in event_rows(db, account)
+                                  if event.effective_at.date() <= row.record_date), Decimal("0"))
     if body.state == "EFFECTIVE" and row.effective_date > AS_OF:
         raise ApiError(409, "NOT_EFFECTIVE", "Corporate action is not effective yet.")
     if body.state == "POSTED":
@@ -232,4 +238,4 @@ def admin_custody_operations(tenant_id: str, request: Request, db: Session = Dep
             "accounts": [position_json(db, x) for x in accounts],
             "actions": [action_json(x) for x in actions],
             "dividends": [dividend_json(x) for x in dividends],
-            "transfers": [transfer_json(x) for account in accounts for x in transfers_for(db, account)]}
+            "transfers": [transfer_json(db, x) for account in accounts for x in transfers_for(db, account)]}

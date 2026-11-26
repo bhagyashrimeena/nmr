@@ -64,7 +64,7 @@ def test_all_v2_stock_routes_share_policy_and_identity_scope(demo):
 def test_transfer_draft_scope_idempotency_and_completion(demo):
     client, engine = demo
     route = "/api/v2/client/me/shareholding/transfer-drafts"
-    body = {"units": "5", "recipient_account_reference": "SEC-EMP-001"}
+    body = {"units": "5", "recipient_account_reference": "CUST-EMP-001"}
     key = {"Idempotency-Key": "stock-transfer-001"}
     denied = client.post(route, headers={**auth(employee_token()), **key}, json=body)
     assert denied.status_code == 403 and denied.json()["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
@@ -74,7 +74,7 @@ def test_transfer_draft_scope_idempotency_and_completion(demo):
     request_id = first.json()["request_id"]
     assert client.post(route, headers={**permitted, **key}, json=body).json()["request_id"] == request_id
     conflict = client.post(route, headers={**permitted, **key},
-                           json={"units": "6", "recipient_account_reference": "SEC-EMP-001"})
+                           json={"units": "6", "recipient_account_reference": "CUST-EMP-001"})
     assert conflict.status_code == 409 and conflict.json()["error"]["code"] == "DUPLICATE_REQUEST"
     assert client.get(f"/api/v2/client/me/shareholding/transfers/{request_id}",
                       headers=auth(employee_token("EMP-002"))).status_code == 404
@@ -84,8 +84,14 @@ def test_transfer_draft_scope_idempotency_and_completion(demo):
 
     admin = auth(admin_token())
     review = f"/api/v2/admin/tenants/toyota-demo/shareholding/transfers/{request_id}"
+    assert client.patch(review, headers=admin, json={"state": "COMPLETED", "reason": "No settlement"}).status_code == 409
     for state in ["ELIGIBILITY_CHECKED", "CORPORATE_APPROVED", "PROVIDER_FORWARDED", "COMPLETED"]:
-        response = client.patch(review, headers=admin, json={"state": state, "reason": "Reviewed by operations"})
+        if state == "COMPLETED":
+            missing = client.patch(review, headers=admin,
+                                   json={"state": state, "reason": "No confirmation"})
+            assert missing.status_code == 422 and missing.json()["error"]["code"] == "CONFIRMATION_REQUIRED"
+        response = client.patch(review, headers=admin, json={"state": state, "reason": "Reviewed by operations",
+                                                           "confirmation_reference": "SETTLE-EMP001-001" if state == "COMPLETED" else None})
         assert response.status_code == 200, response.text
     assert client.patch(review, headers=admin, json={"state": "COMPLETED", "reason": "Repeated review"}).status_code == 200
     after = client.get("/api/v2/client/me/shareholding/summary", headers=permitted).json()
@@ -120,11 +126,11 @@ def test_master_off_blocks_v2_and_operations_remain_admin_visible(demo):
 
 def test_purchase_respects_whole_share_plan_rule(demo):
     client, _ = demo
-    response = client.post("/api/v2/admin/tenants/toyota-demo/shareholding/purchase-cycles",
+    response = client.post("/api/v2/admin/tenants/secondary-demo/shareholding/purchase-cycles",
                            headers=auth(admin_token()),
                            json={"source_reference": "FRACTIONAL-REJECT-001", "trade_date": "2026-11-26",
                                  "unit_price_jpy": "5000.00", "acquired_units": "1.5",
-                                 "allocations": [{"employee_id": "EMP-001", "units": "1.5"}]})
+                                 "allocations": [{"employee_id": "SEC-001", "units": "1.5"}]})
     assert response.status_code == 422 and response.json()["error"]["code"] == "INVALID_PLAN_RULE"
 
 
@@ -147,10 +153,10 @@ def test_payroll_posts_cash_only_after_validation_and_duplicate_is_rejected(demo
     assert client.patch(review, headers=admin, json={"state": "POSTED", "reason": "Repeated call"}).status_code == 200
     after = client.get("/api/v2/client/me/shareholding/summary",
                        headers=auth(employee_token("EMP-002"))).json()
-    assert after["uninvested_cash_jpy"] == "10000.00" and after["shares_held"] == "36.000000"
+    assert after["uninvested_cash_jpy"] == "10500.00" and after["shares_held"] == "36.000000"
     with Session(engine) as db:
         assert db.scalar(select(func.count()).select_from(FinancialEvent).where(
-            FinancialEvent.source_reference == "PAYROLL-JUL-02")) == 1
+            FinancialEvent.source_reference == "PAYROLL-JUL-02")) == 2
 
 
 def test_purchase_does_not_allocate_until_settled_and_cannot_oversubscribe(demo):
@@ -186,7 +192,7 @@ def test_purchase_does_not_allocate_until_settled_and_cannot_oversubscribe(demo)
     assert client.patch(review, headers=admin, json={"state": "ALLOCATED", "reason": "Settlement confirmed"}).status_code == 200
     assert client.patch(review, headers=admin, json={"state": "ALLOCATED", "reason": "Repeated call"}).status_code == 200
     summary = client.get("/api/v2/client/me/shareholding/summary", headers=employee).json()
-    assert summary["shares_held"] == "37.000000" and summary["uninvested_cash_jpy"] == "5000.00"
+    assert summary["shares_held"] == "37.000000" and summary["uninvested_cash_jpy"] == "5500.00"
     with Session(engine) as db:
         assert db.scalar(select(func.count()).select_from(FinancialEvent).where(
             FinancialEvent.source_reference == "PURCHASE-JUL-02")) == 1
