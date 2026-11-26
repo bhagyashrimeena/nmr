@@ -5,7 +5,7 @@ Never expose this provider-admin route via the employee-facing MCP adapter.
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,6 +18,7 @@ from .v2_models import (
 )
 from .stock_v2 import stock_summary
 from .pension_v2 import pension_account
+from .details import growth_projection
 from .custody_v2 import position_json, dividend_json, action_json
 from .equity_v2 import award_json
 from .v2_seed import SNAPSHOT
@@ -128,3 +129,37 @@ def provider_employee_record(
         service=service, outcome="permitted", reason="V2_PARTICIPANT_SOURCE",
     )
     return result
+
+
+@router.get("/api/v2/admin/tenants/{tenant_id}/employees/{employee_id}/pension/retirement-projection")
+def provider_pension_projection(
+    tenant_id: str,
+    employee_id: str,
+    request: Request,
+    years: int = Query(20, ge=1, le=40),
+    monthly_jpy: int = Query(35000, ge=0, le=1_000_000),
+    annual_return_pct: Decimal = Query(Decimal("4"), ge=0, le=12),
+    db: Session = Depends(get_db),
+    claims: dict = Depends(require_admin()),
+):
+    employee = db.get(Employee, employee_id)
+    if not employee or employee.tenant_id != tenant_id:
+        raise ApiError(404, "RESOURCE_NOT_FOUND", "Participant is not available for this corporate client.")
+    if db.scalar(select(PensionFundPosition).where(PensionFundPosition.employee_id == employee_id)) is None:
+        raise ApiError(404, "RESOURCE_NOT_FOUND", "Participant has no V2 pension account.")
+
+    account = pension_account(db, tenant_id, employee_id)
+    forecast = growth_projection(int(Decimal(account["balance_jpy"])), monthly_jpy, years, annual_return_pct)
+    request.state.operation = "calculate_v2_pension_projection"
+    request.state.principal_scopes = ",".join(claims.get("scopes") or [])
+    audit(db, request, actor=claims["sub"], tenant_id=tenant_id, employee_id=employee_id,
+          service="pension", outcome="permitted", reason="V2_PENSION_PROJECTION")
+    return {
+        "tenant_id": tenant_id, "employee_id": employee_id,
+        "as_of": SNAPSHOT.date(), "source_version": "V2_LEDGER",
+        "currency": "JPY",
+        "assumptions": {"monthly_jpy": monthly_jpy, "years": years,
+                        "annual_return_pct": str(annual_return_pct),
+                        "formula_id": "MONTH_END_COMPOUND_V1"},
+        "projection": forecast,
+    }
