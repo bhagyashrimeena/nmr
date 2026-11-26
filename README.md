@@ -76,3 +76,8 @@ OpenAPI: `http://127.0.0.1:8000/docs` and `http://127.0.0.1:8000/openapi.json`. 
 ## Boundaries and limitations
 
 This local POC has fixed historical data, no financial execution, and no real customer information. Its local password login and shared-secret demo JWT minting are suitable only for the demonstration. A production integration would require delegated OAuth, enterprise key handling, rate limits, migrations, operational monitoring, and a security review. The access switch prevents new protected API calls; it cannot erase already returned responses or chat history. End-to-end chatbot/MCP verification remains dependent on the teammate's separate components.
+
+
+## Detailed standalone provider implementation
+
+A separate, self-contained FastAPI + browser-JavaScript implementation with five detailed workplace-finance services, per-tenant master and individual service permissions, synthetic data, admin views, audit logs, and API tests is available in [`provider-standalone/`](provider-standalone/README.md). This complements rather than replaces the existing React/FastAPI implementation. The Toyota chatbot and MCP adapter are separate integration work.
