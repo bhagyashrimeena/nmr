@@ -10,7 +10,7 @@ def test_stock_and_custody_are_arithmetically_linked(demo):
         stock = stock_summary(db, "EMP-001")
         custody = custody_summary(db, "EMP-001")
         lots = db.query(SharePurchase).filter_by(employee_id="EMP-001").all()
-        position = db.query(CustodyPosition).filter_by(employee_id="EMP-001").one()
+        position = db.query(CustodyPosition).filter_by(employee_id="EMP-001", instrument="Toyota Motor ordinary shares").one()
         assert stock["shares_held"] == position.quantity == 120
         assert stock["total_contributions_jpy"] == sum(p.amount_jpy for p in lots) == 240000
         assert all(p.amount_jpy == p.shares * p.price_jpy for p in lots)
@@ -34,7 +34,7 @@ def test_equity_is_distinct_from_purchased_shares(demo):
         assert equity["grants"][0]["award_type"] == "RSU"
         assert equity["grants"][0]["vested_units"] == 50
         assert equity["grants"][0]["unvested_units"] == 150
-        assert equity["next_vesting"]["vest_date"].isoformat() == "2027-04-01"
+        assert equity["next_vesting"]["vest_date"].isoformat() == "2027-03-01"
         assert equity_summary(db, "EMP-002")["grants"] == []
 
 
@@ -42,6 +42,6 @@ def test_wellness_topic_filter(demo):
     _, engine = demo
     with Session(engine) as db:
         resources = wellness_resources(db, "retirement")
-        assert len(resources) == 1
+        assert len(resources) == 2
         assert resources[0]["topic"] == "retirement"
-        assert len(wellness_resources(db)) == 3
+        assert len(wellness_resources(db)) == 8

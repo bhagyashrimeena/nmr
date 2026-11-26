@@ -24,7 +24,7 @@ def test_all_five_client_services_have_distinct_data(demo):
     assert responses[1].json()["balance_jpy"] == 3_500_000
     assert responses[2].json()["resources"][0]["topic"] == "retirement"
     assert responses[3].json()["dividends"][0]["status"] == "credited"
-    assert responses[4].json()["next_vesting"]["vest_date"] == "2027-04-01"
+    assert responses[4].json()["next_vesting"]["vest_date"] == "2027-03-01"
 
 
 def test_toggle_on_off_on_persists_and_audits(demo):
@@ -65,7 +65,7 @@ def test_auth_roles_scopes_and_tenant_isolation(demo):
                         json={"enabled": False, "reason": "Should not change"}).status_code == 403
     assert client.get("/api/v1/admin/tenants", headers=auth(employee_token())).status_code == 403
     forged_tenant = employee_token("SEC-001", "toyota-demo")
-    assert client.get(CLIENT_ROUTES[0], headers=auth(forged_tenant)).status_code == 404
+    assert client.get(CLIENT_ROUTES[0], headers=auth(forged_tenant)).status_code == 403
     invalid_sub = mint_token(sub="employee:EMP-002", role="employee", scopes=["read:finance"],
                              tenant_id="toyota-demo", employee_id="EMP-001")
     assert client.get(CLIENT_ROUTES[0], headers=auth(invalid_sub)).status_code == 403

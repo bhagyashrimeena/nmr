@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NMR Workplace Finance Provider API",
-    "description": "Fictional, read-only workplace finance demonstration API. No real customer data or transactions.",
+    "description": "Workplace finance account and access management API. Financial records are read-only.",
     "version": "1.0.0"
   },
   "paths": {
@@ -99,7 +99,7 @@
     "/api/v1/client/me/stock-ownership": {
       "get": {
         "tags": [
-          "Client \u00b7 Stock ownership"
+          "Client · Stock ownership"
         ],
         "summary": "Client Stock",
         "operationId": "client_stock_api_v1_client_me_stock_ownership_get",
@@ -155,7 +155,7 @@
     "/api/v1/client/me/pension": {
       "get": {
         "tags": [
-          "Client \u00b7 Pension"
+          "Client · Pension"
         ],
         "summary": "Client Pension",
         "operationId": "client_pension_api_v1_client_me_pension_get",
@@ -211,7 +211,7 @@
     "/api/v1/client/wellness/resources": {
       "get": {
         "tags": [
-          "Client \u00b7 Wellness"
+          "Client · Wellness"
         ],
         "summary": "Client Wellness",
         "operationId": "client_wellness_api_v1_client_wellness_resources_get",
@@ -236,6 +236,23 @@
                 }
               ],
               "title": "Topic"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
             }
           }
         ],
@@ -296,7 +313,7 @@
     "/api/v1/client/me/custody": {
       "get": {
         "tags": [
-          "Client \u00b7 Custody"
+          "Client · Custody"
         ],
         "summary": "Client Custody",
         "operationId": "client_custody_api_v1_client_me_custody_get",
@@ -352,7 +369,7 @@
     "/api/v1/client/me/equity-compensation": {
       "get": {
         "tags": [
-          "Client \u00b7 Equity compensation"
+          "Client · Equity compensation"
         ],
         "summary": "Client Equity",
         "operationId": "client_equity_api_v1_client_me_equity_compensation_get",
@@ -403,6 +420,234 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/client/wellness/savings-projection": {
+      "get": {
+        "tags": [
+          "Client · Wellness"
+        ],
+        "summary": "Client Savings Projection",
+        "operationId": "client_savings_projection_api_v1_client_wellness_savings_projection_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "monthly_jpy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 0,
+              "default": 15000,
+              "title": "Monthly Jpy"
+            }
+          },
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 10,
+              "title": "Years"
+            }
+          },
+          {
+            "name": "annual_return_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 12.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "0",
+              "title": "Annual Return Pct"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/me/pension/projection": {
+      "get": {
+        "tags": [
+          "Client · Pension"
+        ],
+        "summary": "Client Pension Projection",
+        "operationId": "client_pension_projection_api_v1_client_me_pension_projection_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 20,
+              "title": "Years"
+            }
+          },
+          {
+            "name": "annual_return_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 12.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "4",
+              "title": "Annual Return Pct"
+            }
+          },
+          {
+            "name": "monthly_contribution_jpy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 1000000,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Monthly Contribution Jpy"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/tenants": {
@@ -693,6 +938,491 @@
         }
       }
     },
+    "/api/v1/admin/tenants/{tenant_id}/employees/{employee_id}/wellness/resources": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Wellness",
+        "operationId": "admin_wellness_api_v1_admin_tenants__tenant_id__employees__employee_id__wellness_resources_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Topic"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/tenants/{tenant_id}/employees/{employee_id}/wellness/progress/{resource_id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Wellness Progress",
+        "operationId": "admin_wellness_progress_api_v1_admin_tenants__tenant_id__employees__employee_id__wellness_progress__resource_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "resource_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Resource Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WellnessProgressPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/tenants/{tenant_id}/employees/{employee_id}/wellness/savings-projection": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Savings Projection",
+        "operationId": "admin_savings_projection_api_v1_admin_tenants__tenant_id__employees__employee_id__wellness_savings_projection_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "monthly_jpy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000000,
+              "minimum": 0,
+              "default": 15000,
+              "title": "Monthly Jpy"
+            }
+          },
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 10,
+              "title": "Years"
+            }
+          },
+          {
+            "name": "annual_return_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 12.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "0",
+              "title": "Annual Return Pct"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/tenants/{tenant_id}/employees/{employee_id}/pension/projection": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Pension Projection",
+        "operationId": "admin_pension_projection_api_v1_admin_tenants__tenant_id__employees__employee_id__pension_projection_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "employee_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Employee Id"
+            }
+          },
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 20,
+              "title": "Years"
+            }
+          },
+          {
+            "name": "annual_return_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 12.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "default": "4",
+              "title": "Annual Return Pct"
+            }
+          },
+          {
+            "name": "monthly_contribution_jpy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 1000000,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Monthly Contribution Jpy"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/tenants/{tenant_id}/mcp-access": {
       "get": {
         "tags": [
@@ -855,6 +1585,195 @@
         }
       }
     },
+    "/api/v1/admin/tenants/{tenant_id}/service-access/{service}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Patch Service",
+        "operationId": "admin_patch_service_api_v1_admin_tenants__tenant_id__service_access__service__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "service",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Service"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/tenants/{tenant_id}/access-changes": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admin Access Changes",
+        "operationId": "admin_access_changes_api_v1_admin_tenants__tenant_id__access_changes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccessChangeItem"
+                  },
+                  "title": "Response Admin Access Changes Api V1 Admin Tenants  Tenant Id  Access Changes Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/audit-events": {
       "get": {
         "tags": [
@@ -968,6 +1887,60 @@
   },
   "components": {
     "schemas": {
+      "AccessChangeItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "previous_enabled": {
+            "type": "boolean",
+            "title": "Previous Enabled"
+          },
+          "new_enabled": {
+            "type": "boolean",
+            "title": "New Enabled"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "request_id",
+          "actor",
+          "tenant_id",
+          "service",
+          "previous_enabled",
+          "new_enabled",
+          "reason",
+          "created_at"
+        ],
+        "title": "AccessChangeItem"
+      },
       "AdminLogin": {
         "properties": {
           "username": {
@@ -995,12 +1968,17 @@
           "percentage": {
             "type": "integer",
             "title": "Percentage"
+          },
+          "illustrative_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Value Jpy"
           }
         },
         "type": "object",
         "required": [
           "asset_class",
-          "percentage"
+          "percentage",
+          "illustrative_value_jpy"
         ],
         "title": "Allocation"
       },
@@ -1014,12 +1992,17 @@
           "amount_jpy": {
             "type": "integer",
             "title": "Amount Jpy"
+          },
+          "employer_incentive_jpy": {
+            "type": "integer",
+            "title": "Employer Incentive Jpy"
           }
         },
         "type": "object",
         "required": [
           "month",
-          "amount_jpy"
+          "amount_jpy",
+          "employer_incentive_jpy"
         ],
         "title": "Contribution"
       },
@@ -1037,10 +2020,26 @@
             "type": "string",
             "title": "Title"
           },
+          "record_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Date"
+          },
           "effective_date": {
             "type": "string",
             "format": "date",
             "title": "Effective Date"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
           }
         },
         "type": "object",
@@ -1048,7 +2047,9 @@
           "id",
           "instrument",
           "title",
-          "effective_date"
+          "record_date",
+          "effective_date",
+          "status"
         ],
         "title": "CorporateActionItem"
       },
@@ -1061,12 +2062,32 @@
           "quantity": {
             "type": "integer",
             "title": "Quantity"
+          },
+          "security_id": {
+            "type": "string",
+            "title": "Security Id"
+          },
+          "asset_class": {
+            "type": "string",
+            "title": "Asset Class"
+          },
+          "illustrative_price_jpy": {
+            "type": "string",
+            "title": "Illustrative Price Jpy"
+          },
+          "illustrative_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Value Jpy"
           }
         },
         "type": "object",
         "required": [
           "instrument",
-          "quantity"
+          "quantity",
+          "security_id",
+          "asset_class",
+          "illustrative_price_jpy",
+          "illustrative_value_jpy"
         ],
         "title": "CustodyPositionItem"
       },
@@ -1089,6 +2110,31 @@
             "type": "string",
             "title": "Currency"
           },
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "account_status": {
+            "type": "string",
+            "title": "Account Status"
+          },
+          "opened_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Opened On"
+          },
+          "illustrative_portfolio_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Portfolio Value Jpy"
+          },
+          "dividends_received_ytd_jpy": {
+            "type": "integer",
+            "title": "Dividends Received Ytd Jpy"
+          },
+          "pending_corporate_actions": {
+            "type": "integer",
+            "title": "Pending Corporate Actions"
+          },
           "positions": {
             "items": {
               "$ref": "#/components/schemas/CustodyPositionItem"
@@ -1109,6 +2155,31 @@
             },
             "type": "array",
             "title": "Corporate Actions"
+          },
+          "settlements": {
+            "items": {
+              "$ref": "#/components/schemas/SettlementItem"
+            },
+            "type": "array",
+            "title": "Settlements"
+          },
+          "valuation_history": {
+            "items": {
+              "$ref": "#/components/schemas/CustodyValuationItem"
+            },
+            "type": "array",
+            "title": "Valuation History"
+          },
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/CustodyStatement"
+            },
+            "type": "array",
+            "title": "Statements"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
           }
         },
         "type": "object",
@@ -1117,11 +2188,63 @@
           "employee_id",
           "as_of",
           "currency",
+          "account_id",
+          "account_status",
+          "opened_on",
+          "illustrative_portfolio_value_jpy",
+          "dividends_received_ytd_jpy",
+          "pending_corporate_actions",
           "positions",
           "dividends",
-          "corporate_actions"
+          "corporate_actions",
+          "settlements",
+          "valuation_history",
+          "statements",
+          "note"
         ],
         "title": "CustodyResponse"
+      },
+      "CustodyStatement": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "dividends_credited_jpy": {
+            "type": "integer",
+            "title": "Dividends Credited Jpy"
+          },
+          "settled_events": {
+            "type": "integer",
+            "title": "Settled Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "dividends_credited_jpy",
+          "settled_events"
+        ],
+        "title": "CustodyStatement"
+      },
+      "CustodyValuationItem": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "illustrative_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Value Jpy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "illustrative_value_jpy"
+        ],
+        "title": "CustodyValuationItem"
       },
       "DividendItem": {
         "properties": {
@@ -1129,6 +2252,18 @@
             "type": "string",
             "format": "date",
             "title": "Payment Date"
+          },
+          "record_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Date"
           },
           "instrument": {
             "type": "string",
@@ -1146,6 +2281,7 @@
         "type": "object",
         "required": [
           "payment_date",
+          "record_date",
           "instrument",
           "amount_jpy",
           "status"
@@ -1183,6 +2319,20 @@
                 "type": "null"
               }
             ]
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EquitySummary"
+          },
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/EquityStatement"
+            },
+            "type": "array",
+            "title": "Statements"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
           }
         },
         "type": "object",
@@ -1191,9 +2341,74 @@
           "employee_id",
           "as_of",
           "grants",
-          "next_vesting"
+          "next_vesting",
+          "summary",
+          "statements",
+          "note"
         ],
         "title": "EquityResponse"
+      },
+      "EquityStatement": {
+        "properties": {
+          "grant_id": {
+            "type": "string",
+            "title": "Grant Id"
+          },
+          "grant_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Grant Date"
+          },
+          "award_type": {
+            "type": "string",
+            "title": "Award Type"
+          },
+          "granted_units": {
+            "type": "integer",
+            "title": "Granted Units"
+          },
+          "vested_units": {
+            "type": "integer",
+            "title": "Vested Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grant_id",
+          "grant_date",
+          "award_type",
+          "granted_units",
+          "vested_units"
+        ],
+        "title": "EquityStatement"
+      },
+      "EquitySummary": {
+        "properties": {
+          "grant_count": {
+            "type": "integer",
+            "title": "Grant Count"
+          },
+          "vested_units": {
+            "type": "integer",
+            "title": "Vested Units"
+          },
+          "unvested_units": {
+            "type": "integer",
+            "title": "Unvested Units"
+          },
+          "exercise_eligible_options": {
+            "type": "integer",
+            "title": "Exercise Eligible Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grant_count",
+          "vested_units",
+          "unvested_units",
+          "exercise_eligible_options"
+        ],
+        "title": "EquitySummary"
       },
       "ErrorBody": {
         "properties": {
@@ -1245,6 +2460,14 @@
             "format": "date",
             "title": "Grant Date"
           },
+          "plan_name": {
+            "type": "string",
+            "title": "Plan Name"
+          },
+          "vesting_condition": {
+            "type": "string",
+            "title": "Vesting Condition"
+          },
           "granted_units": {
             "type": "integer",
             "title": "Granted Units"
@@ -1256,6 +2479,53 @@
           "unvested_units": {
             "type": "integer",
             "title": "Unvested Units"
+          },
+          "forfeited_units": {
+            "type": "integer",
+            "title": "Forfeited Units"
+          },
+          "released_units": {
+            "type": "integer",
+            "title": "Released Units"
+          },
+          "exercised_units": {
+            "type": "integer",
+            "title": "Exercised Units"
+          },
+          "exercise_eligible_units": {
+            "type": "integer",
+            "title": "Exercise Eligible Units"
+          },
+          "exercise_price_jpy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exercise Price Jpy"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "illustrative_share_price_jpy": {
+            "type": "string",
+            "title": "Illustrative Share Price Jpy"
+          },
+          "illustrative_award_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Award Value Jpy"
           },
           "vesting_events": {
             "items": {
@@ -1270,9 +2540,19 @@
           "id",
           "award_type",
           "grant_date",
+          "plan_name",
+          "vesting_condition",
           "granted_units",
           "vested_units",
           "unvested_units",
+          "forfeited_units",
+          "released_units",
+          "exercised_units",
+          "exercise_eligible_units",
+          "exercise_price_jpy",
+          "expiry_date",
+          "illustrative_share_price_jpy",
+          "illustrative_award_value_jpy",
           "vesting_events"
         ],
         "title": "GrantItem"
@@ -1332,6 +2612,17 @@
           "reason": {
             "type": "string",
             "title": "Reason"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceAccess"
+            },
+            "type": "array",
+            "title": "Services"
+          },
+          "effective_service_count": {
+            "type": "integer",
+            "title": "Effective Service Count"
           }
         },
         "type": "object",
@@ -1340,7 +2631,9 @@
           "enabled",
           "changed_by",
           "changed_at",
-          "reason"
+          "reason",
+          "services",
+          "effective_service_count"
         ],
         "title": "McpResponse"
       },
@@ -1391,9 +2684,21 @@
             "type": "string",
             "title": "Account Type"
           },
+          "plan_name": {
+            "type": "string",
+            "title": "Plan Name"
+          },
+          "enrollment_status": {
+            "type": "string",
+            "title": "Enrollment Status"
+          },
           "balance_jpy": {
             "type": "integer",
             "title": "Balance Jpy"
+          },
+          "opening_balance_jpy": {
+            "type": "integer",
+            "title": "Opening Balance Jpy"
           },
           "employee_contributions_jpy": {
             "type": "integer",
@@ -1403,9 +2708,21 @@
             "type": "integer",
             "title": "Employer Contributions Jpy"
           },
+          "employer_contributions_ytd_jpy": {
+            "type": "integer",
+            "title": "Employer Contributions Ytd Jpy"
+          },
           "investment_change_jpy": {
             "type": "integer",
             "title": "Investment Change Jpy"
+          },
+          "equity_allocation_percent": {
+            "type": "integer",
+            "title": "Equity Allocation Percent"
+          },
+          "illustrative_nav_change_percent": {
+            "type": "string",
+            "title": "Illustrative Nav Change Percent"
           },
           "allocations": {
             "items": {
@@ -1421,6 +2738,30 @@
             "type": "array",
             "title": "Recent Contributions"
           },
+          "contribution_history": {
+            "items": {
+              "$ref": "#/components/schemas/PensionContributionItem"
+            },
+            "type": "array",
+            "title": "Contribution History"
+          },
+          "valuation_history": {
+            "items": {
+              "$ref": "#/components/schemas/PensionValuationItem"
+            },
+            "type": "array",
+            "title": "Valuation History"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/Projection"
+          },
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/PensionStatement"
+            },
+            "type": "array",
+            "title": "Statements"
+          },
           "note": {
             "type": "string",
             "title": "Note"
@@ -1433,15 +2774,158 @@
           "as_of",
           "currency",
           "account_type",
+          "plan_name",
+          "enrollment_status",
           "balance_jpy",
+          "opening_balance_jpy",
           "employee_contributions_jpy",
           "employer_contributions_jpy",
+          "employer_contributions_ytd_jpy",
           "investment_change_jpy",
+          "equity_allocation_percent",
+          "illustrative_nav_change_percent",
           "allocations",
           "recent_contributions",
+          "contribution_history",
+          "valuation_history",
+          "projection",
+          "statements",
           "note"
         ],
         "title": "PensionResponse"
+      },
+      "PensionStatement": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "employee_contributions_jpy": {
+            "type": "integer",
+            "title": "Employee Contributions Jpy"
+          },
+          "employer_contributions_jpy": {
+            "type": "integer",
+            "title": "Employer Contributions Jpy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "employee_contributions_jpy",
+          "employer_contributions_jpy"
+        ],
+        "title": "PensionStatement"
+      },
+      "PensionValuationItem": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "balance_jpy": {
+            "type": "integer",
+            "title": "Balance Jpy"
+          },
+          "illustrative_nav": {
+            "type": "string",
+            "title": "Illustrative Nav"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "balance_jpy",
+          "illustrative_nav"
+        ],
+        "title": "PensionValuationItem"
+      },
+      "Projection": {
+        "properties": {
+          "starting_balance_jpy": {
+            "type": "integer",
+            "title": "Starting Balance Jpy"
+          },
+          "monthly_contribution_jpy": {
+            "type": "integer",
+            "title": "Monthly Contribution Jpy"
+          },
+          "years": {
+            "type": "integer",
+            "title": "Years"
+          },
+          "annual_return_pct": {
+            "type": "string",
+            "title": "Annual Return Pct"
+          },
+          "total_contributed_jpy": {
+            "type": "integer",
+            "title": "Total Contributed Jpy"
+          },
+          "illustrative_future_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Future Value Jpy"
+          },
+          "illustrative_growth_jpy": {
+            "type": "integer",
+            "title": "Illustrative Growth Jpy"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "starting_balance_jpy",
+          "monthly_contribution_jpy",
+          "years",
+          "annual_return_pct",
+          "total_contributed_jpy",
+          "illustrative_future_value_jpy",
+          "illustrative_growth_jpy",
+          "disclaimer"
+        ],
+        "title": "Projection"
+      },
+      "ProjectionResponse": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "employee_id": {
+            "type": "string",
+            "title": "Employee Id"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/Projection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "employee_id",
+          "as_of",
+          "currency",
+          "purpose",
+          "projection"
+        ],
+        "title": "ProjectionResponse"
       },
       "Purchase": {
         "properties": {
@@ -1461,6 +2945,14 @@
           "amount_jpy": {
             "type": "integer",
             "title": "Amount Jpy"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
           }
         },
         "type": "object",
@@ -1468,9 +2960,134 @@
           "purchase_date",
           "shares",
           "price_jpy",
-          "amount_jpy"
+          "amount_jpy",
+          "status",
+          "reference"
         ],
         "title": "Purchase"
+      },
+      "ServiceAccess": {
+        "properties": {
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "effective_enabled": {
+            "type": "boolean",
+            "title": "Effective Enabled"
+          },
+          "changed_by": {
+            "type": "string",
+            "title": "Changed By"
+          },
+          "changed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Changed At"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "service",
+          "title",
+          "description",
+          "route",
+          "enabled",
+          "effective_enabled",
+          "changed_by",
+          "changed_at",
+          "reason"
+        ],
+        "title": "ServiceAccess"
+      },
+      "SettlementItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "instrument": {
+            "type": "string",
+            "title": "Instrument"
+          },
+          "trade_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Trade Date"
+          },
+          "settlement_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Settlement Date"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "instrument",
+          "trade_date",
+          "settlement_date",
+          "quantity",
+          "status"
+        ],
+        "title": "SettlementItem"
+      },
+      "StockActivity": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "amount_jpy": {
+            "type": "integer",
+            "title": "Amount Jpy"
+          },
+          "shares": {
+            "type": "integer",
+            "title": "Shares"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "type",
+          "amount_jpy",
+          "shares"
+        ],
+        "title": "StockActivity"
       },
       "StockResponse": {
         "properties": {
@@ -1495,6 +3112,30 @@
             "type": "string",
             "title": "Plan Id"
           },
+          "plan_name": {
+            "type": "string",
+            "title": "Plan Name"
+          },
+          "enrollment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrollment Date"
+          },
+          "participation_status": {
+            "type": "string",
+            "title": "Participation Status"
+          },
+          "employer_incentive_percent": {
+            "type": "integer",
+            "title": "Employer Incentive Percent"
+          },
           "shares_held": {
             "type": "integer",
             "title": "Shares Held"
@@ -1506,6 +3147,42 @@
           "total_contributions_jpy": {
             "type": "integer",
             "title": "Total Contributions Jpy"
+          },
+          "year_to_date_contributions_jpy": {
+            "type": "integer",
+            "title": "Year To Date Contributions Jpy"
+          },
+          "employer_incentives_jpy": {
+            "type": "integer",
+            "title": "Employer Incentives Jpy"
+          },
+          "uninvested_cash_jpy": {
+            "type": "integer",
+            "title": "Uninvested Cash Jpy"
+          },
+          "average_purchase_cost_jpy": {
+            "type": "string",
+            "title": "Average Purchase Cost Jpy"
+          },
+          "illustrative_share_price_jpy": {
+            "type": "string",
+            "title": "Illustrative Share Price Jpy"
+          },
+          "illustrative_portfolio_value_jpy": {
+            "type": "integer",
+            "title": "Illustrative Portfolio Value Jpy"
+          },
+          "illustrative_unrealized_change_jpy": {
+            "type": "integer",
+            "title": "Illustrative Unrealized Change Jpy"
+          },
+          "current_quarter_purchased_shares": {
+            "type": "integer",
+            "title": "Current Quarter Purchased Shares"
+          },
+          "dividends_received_jpy": {
+            "type": "integer",
+            "title": "Dividends Received Jpy"
           },
           "contributions": {
             "items": {
@@ -1520,6 +3197,31 @@
             },
             "type": "array",
             "title": "Recent Purchases"
+          },
+          "purchases": {
+            "items": {
+              "$ref": "#/components/schemas/Purchase"
+            },
+            "type": "array",
+            "title": "Purchases"
+          },
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/StockActivity"
+            },
+            "type": "array",
+            "title": "Activity"
+          },
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/StockStatement"
+            },
+            "type": "array",
+            "title": "Statements"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
           }
         },
         "type": "object",
@@ -1529,13 +3231,63 @@
           "as_of",
           "currency",
           "plan_id",
+          "plan_name",
+          "enrollment_date",
+          "participation_status",
+          "employer_incentive_percent",
           "shares_held",
           "monthly_contribution_jpy",
           "total_contributions_jpy",
+          "year_to_date_contributions_jpy",
+          "employer_incentives_jpy",
+          "uninvested_cash_jpy",
+          "average_purchase_cost_jpy",
+          "illustrative_share_price_jpy",
+          "illustrative_portfolio_value_jpy",
+          "illustrative_unrealized_change_jpy",
+          "current_quarter_purchased_shares",
+          "dividends_received_jpy",
           "contributions",
-          "recent_purchases"
+          "recent_purchases",
+          "purchases",
+          "activity",
+          "statements",
+          "note"
         ],
         "title": "StockResponse"
+      },
+      "StockStatement": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "employee_contributions_jpy": {
+            "type": "integer",
+            "title": "Employee Contributions Jpy"
+          },
+          "employer_incentives_jpy": {
+            "type": "integer",
+            "title": "Employer Incentives Jpy"
+          },
+          "shares_purchased": {
+            "type": "integer",
+            "title": "Shares Purchased"
+          },
+          "purchase_cost_jpy": {
+            "type": "integer",
+            "title": "Purchase Cost Jpy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "employee_contributions_jpy",
+          "employer_incentives_jpy",
+          "shares_purchased",
+          "purchase_cost_jpy"
+        ],
+        "title": "StockStatement"
       },
       "TokenResponse": {
         "properties": {
@@ -1645,6 +3397,10 @@
           "content": {
             "type": "string",
             "title": "Content"
+          },
+          "progress": {
+            "type": "string",
+            "title": "Progress"
           }
         },
         "type": "object",
@@ -1653,9 +3409,46 @@
           "title",
           "topic",
           "description",
-          "content"
+          "content",
+          "progress"
         ],
         "title": "WellnessItem"
+      },
+      "WellnessProgressPatch": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "completed"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "WellnessProgressPatch"
+      },
+      "WellnessProgressSummary": {
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "title": "Completed"
+          },
+          "in_progress": {
+            "type": "integer",
+            "title": "In Progress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "completed",
+          "in_progress"
+        ],
+        "title": "WellnessProgressSummary"
       },
       "WellnessResponse": {
         "properties": {
@@ -1679,6 +3472,34 @@
             "type": "array",
             "title": "Resources"
           },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "preferred_topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Topic"
+          },
+          "recommended_resources": {
+            "items": {
+              "$ref": "#/components/schemas/WellnessItem"
+            },
+            "type": "array",
+            "title": "Recommended Resources"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/WellnessProgressSummary"
+          },
           "note": {
             "type": "string",
             "title": "Note"
@@ -1690,6 +3511,10 @@
           "employee_id",
           "as_of",
           "resources",
+          "topics",
+          "preferred_topic",
+          "recommended_resources",
+          "progress",
           "note"
         ],
         "title": "WellnessResponse"

@@ -37,7 +37,7 @@ def pension_summary(db: Session, employee_id: str):
             "investment_change_jpy": account.investment_change_jpy,
             "allocations": [{"asset_class": a.asset_class, "percentage": a.percentage} for a in allocations],
             "recent_contributions": [{"date": c.contribution_date, "employee_amount_jpy": c.employee_amount_jpy, "employer_amount_jpy": c.employer_amount_jpy} for c in contributions[:6]],
-            "note": "Balances and investment changes are synthetic historical figures; future returns are not guaranteed."}
+            "note": "Investment values reflect account records as of the valuation date; future returns are not guaranteed."}
 
 
 def wellness_resources(db: Session, topic: str | None = None):
