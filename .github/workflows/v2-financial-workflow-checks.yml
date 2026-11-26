@@ -3,10 +3,13 @@ name: NMR V2 financial workflow checks
 on:
   push:
     branches:
+      - main
+      - chore/provider-main-release-checks
       - feat/v2-financial-workflow-hardening
       - feat/five-specialist-workbenches
   pull_request:
     branches:
+      - main
       - feat/workplace-finance-v2
       - feat/v2-financial-workflow-hardening
 
