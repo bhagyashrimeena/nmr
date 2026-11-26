@@ -52,6 +52,48 @@ try {
     await page.getByRole('tab',{name:'Workbench'}).click()
     await page.getByRole('heading',{name:item.heading,level:2}).waitFor()
   }
+  // Screenshot regression: participant record header and metric grid should remain
+  // readable and balanced at desktop, laptop and phone widths.
+  await page.setViewportSize({width:1480,height:980})
+  await nav.getByRole('button',{name:'Employee Stock Ownership'}).click()
+  await page.getByRole('tab',{name:'Overview'}).click()
+  await page.locator('.v2-source-bar').waitFor()
+  await page.locator('.v2-stock-metrics .metric').first().waitFor()
+  assert.equal(await page.locator('.v2-stock-metrics .metric').count(),4)
+  const desktop = await page.evaluate(() => {
+    const bar=document.querySelector('.v2-source-bar')
+    const cards=[...document.querySelectorAll('.v2-stock-metrics .metric')]
+    const nav=[...document.querySelectorAll('.domain-navigation .subtabs')]
+    return {
+      barDisplay:getComputedStyle(bar).display,
+      barTitleSize:parseFloat(getComputedStyle(document.querySelector('.v2-source-ident strong')).fontSize),
+      rows:cards.map(x=>Math.round(x.getBoundingClientRect().top)),
+      navClipped:nav.some(x=>x.scrollWidth > x.clientWidth + 2),
+    }
+  })
+  assert.equal(desktop.barDisplay,'flex','V2 source header should have a defined layout')
+  assert.ok(desktop.barTitleSize>=15,'V2 source header should use readable type')
+  assert.equal(new Set(desktop.rows).size,1,'All four stock metrics should share one desktop row')
+  assert.equal(desktop.navClipped,false,'Service navigation must wrap rather than horizontally scroll')
+  await page.screenshot({path:resolve(outputDir,'stock-record-desktop.png'),fullPage:true})
+
+  await page.setViewportSize({width:1024,height:850})
+  const laptop = await page.evaluate(() => [...document.querySelectorAll('.v2-stock-metrics .metric')]
+    .map(x=>Math.round(x.getBoundingClientRect().top)))
+  assert.equal(new Set(laptop).size,2,'Stock cards should form a balanced 2 by 2 grid on a laptop')
+  await page.screenshot({path:resolve(outputDir,'stock-record-laptop.png'),fullPage:true})
+
+  await page.setViewportSize({width:460,height:850})
+  const phone = await page.evaluate(() => ({
+    metricRows:new Set([...document.querySelectorAll('.v2-stock-metrics .metric')]
+      .map(x=>Math.round(x.getBoundingClientRect().top))).size,
+    pageOverflows:document.documentElement.scrollWidth > window.innerWidth+2,
+  }))
+  assert.equal(phone.metricRows,4,'Stock metrics should stack in one column on narrow phones')
+  assert.equal(phone.pageOverflows,false,'The page must not require horizontal scrolling on mobile')
+  await page.screenshot({path:resolve(outputDir,'stock-record-mobile.png'),fullPage:true})
+  await page.setViewportSize({width:1480,height:980})
+
   assert.deepEqual(errors,[],'There should be no uncaught browser errors')
   console.log('PASS: all five specialist workbenches load V2 records and navigate to operational workflows')
 }finally{
