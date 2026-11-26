@@ -4,5 +4,6 @@ import App from './App'
 import './style.css'
 import './details.css'
 import './workbenches.css'
+import './record-layout.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>)
