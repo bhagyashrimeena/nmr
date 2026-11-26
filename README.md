@@ -42,7 +42,19 @@ Open `http://127.0.0.1:5173`. With the supplied local configuration, sign in as 
 
 ## What is available
 
-The five service areas have detailed records and operator views:
+The provider portal opens each service in a **purpose-built financial operations workbench**, using persisted V2 records:
+
+| Service | Internal operational workspace |
+| --- | --- |
+| Employee Stock Ownership | Payroll batch pipeline, purchase allocations, transfer processing and reconciliation cases |
+| Corporate Pension | Dated fund valuations, investment allocations, contribution instructions and exceptions |
+| Financial Wellness | Editorial content approvals, published benefit rules and seminar programme |
+| Trust & Custody | Transfer settlement monitor, position details, corporate actions and dividend processing |
+| Equity Compensation | Grant register, vesting timeline, plan reserve and release review |
+
+Each workbench links to its actual backend operations and separately groups **Provider workspace** from **Participant account** views. The master MCP switch and five tenant-specific service switches remain enforced by the provider backend, not by the UI.
+
+The five service areas also have detailed records and operator views:
 
 - Stock ownership: plan, membership, payroll posting, purchase allocation, transfer review, and reconciliation cases.
 - Pension: fund positions and NAV, contribution records, future allocation instructions, and exceptions.
@@ -64,7 +76,7 @@ cd backend
 .\.venv\Scripts\python.exe -m app.smoke
 cd ..\frontend
 npm run build
-npm run smoke:browser
+npm run smoke:browser  # current five-workbench Chromium check
 ```
 
 The browser smoke test requires both servers and saves screenshots under `docs/screenshots/`. The HTTP smoke test restores access settings after its ON/OFF/ON sequence.
