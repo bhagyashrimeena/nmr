@@ -21,7 +21,7 @@ page.on('pageerror',e=>errors.push(e.message))
 
 const cases=[
   {nav:'Employee Stock Ownership',heading:'Shareholding operations',panel:'Payroll batch processing',
-   open:'Receive / review payroll',detail:'Receive a payroll batch',file:'stock.png'},
+   open:'Receive / review payroll',detail:'Receive payroll batch',file:'stock.png'},
   {nav:'Corporate Pension',heading:'Pension investment administration',panel:'Investment funds and dated NAV',
    open:'Review instructions',detail:'Future contribution instructions',file:'pension.png'},
   {nav:'Financial Wellness',heading:'Financial education programmes',panel:'Editorial pipeline',
