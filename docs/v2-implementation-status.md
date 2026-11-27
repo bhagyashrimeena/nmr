@@ -1,6 +1,6 @@
 ﻿# V2 implementation status and architecture
 
-Source blueprint: `NMR_Workplace_Finance_V2_Functional_Blueprint.md`. This work extends the existing React/FastAPI application and keeps `/api/v1` available. The provider application remains separate from the Toyota chatbot and MCP server.
+This work extends the existing React/FastAPI application and keeps `/api/v1` available. The provider application remains separate from the Toyota chatbot and MCP server.
 
 ## Architecture and file structure
 
@@ -34,12 +34,12 @@ The data path is: signed employee token -> master/service/employee policy -> ten
 - Deepen employment-event policy, PSU certification, reserve approvals, option expiry variations, and report jobs. The generated population has varied histories, but not every participant uses all five services.
 - Add dedicated custody settlement and position-lot tables for all lifecycle states, plus richer reconciliation and statement generation.
 - Add content revision history, distinct editorial reviewers, seminar registration and attendance, and aggregate participation reporting.
-- Add operator creation forms for stock payroll and purchase cycles; those creation routes are currently API only.
+- Continue expanding stock payroll and purchase-cycle controls beyond the current provider forms, including bank reconciliation and richer dividend processing.
 - Replace the V1 summary panels with V2-derived summaries where state changes should be immediately reflected across views.
 - Add managed database migrations and database-level append-only enforcement for a deployed environment. The current event guard protects SQLAlchemy ORM updates and deletes; direct SQL is outside it.
 - Add delegated employee identity and end-to-end MCP/chatbot integration when the separate components are available.
 
-The service-by-service findings, verified controls, and unresolved data-model gaps from `NMR_Realism_Research_and_QA_Pack.md` are recorded in `docs/realism-qa-review.md`.
+Service-by-service findings, verified controls, and unresolved data-model gaps are recorded in `docs/realism-qa-review.md`.
 
 ## Validation
 
