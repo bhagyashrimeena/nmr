@@ -176,7 +176,7 @@ def custody_summary(db: Session, employee_id: str):
                    "valuation_history": [{"date": v.valuation_date, "illustrative_value_jpy": v.illustrative_value_jpy} for v in valuations],
                    "statements": [{"period": "2026", "dividends_credited_jpy": sum(d["amount_jpy"] for d in dividends if d["status"] == "credited" and d["payment_date"].year == 2026),
                                    "settled_events": sum(s.status == "settled" for s in settlements)}],
-                   "note": "Valuations and settlements are read-only account records. Contact the custody team for account instructions."})
+                   "note": "Valuations and settlements are read-only account records. Contact custody operations for account instructions."})
     return result
 
 

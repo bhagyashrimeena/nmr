@@ -13,7 +13,7 @@ This work extends the existing React/FastAPI application and keeps `/api/v1` ava
 - `frontend/src/*Operations.tsx`: operator views for each service. They read V2 routes. The stock overview also reads its current cash, contribution, and unit figures from the V2 operational summary; other overview panels still use V1 summaries.
 - `frontend/src/ProviderDirectories.tsx` and `ProviderOperations.tsx`: searchable participants, agreements, case history, and dated report views.
 - `backend/tests/test_*_v2.py` and `backend/tests/test_realism_qa.py`: domain, identity, policy, API, and financial operations verification.
-- `docs/v2-api-contract.md`: teammate handoff; `docs/openapi.json`: exported OpenAPI snapshot.
+- `docs/v2-api-contract.md`: external API contract; `docs/openapi.json`: exported OpenAPI snapshot.
 
 The data path is: signed employee token -> master/service/employee policy -> tenant-scoped service query -> event or domain state -> response and operation audit. Admin review routes update workflow states and write an audit event. Financial journal amounts use `Decimal`; stock and custody movement on a completed transfer shares a correlation ID.
 

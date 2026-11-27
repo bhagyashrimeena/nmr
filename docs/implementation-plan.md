@@ -13,8 +13,8 @@ Scope: NMR provider application only. The Toyota chatbot and MCP adapter belong 
 - `backend/app/main.py`: versioned client and administrator routes, OpenAPI, errors, and audit logging.
 - `backend/tests/`: domain and HTTP authorization tests, including ON/OFF/ON.
 - `frontend/`: React administrator portal consuming the backend.
-- `docs/api-contract.md`: handoff contract and example calls for the MCP developer.
+- `docs/api-contract.md`: integration contract and example MCP calls.
 
-Implementation completed: extend seed and data model; enforce persistent master and per-service policy; enrich all five service views and calculators; upgrade portal; test independently gated services and HTTP flow; update the handoff contract.
+Implementation completed: extend seed and data model; enforce persistent master and per-service policy; enrich all five service views and calculators; upgrade portal; test independently gated services and HTTP flow; update the integration contract.
 
 The POC uses only fictional records and offers no transaction routes. The admin portal has a separate identity and does not impersonate an employee to browse data.

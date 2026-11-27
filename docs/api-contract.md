@@ -25,7 +25,7 @@ Required claims for a client request:
 }
 ```
 
-The timestamps above illustrate claim shape only. Mint current tokens with `python -m app.tokens --tenant toyota-demo --employee EMP-001` from `backend/`, after setting `.env`. The secret stays on the NMR backend/local integration environment and never enters the browser bundle. The adapter must not construct employee identity from a chat prompt or arbitrary HTTP header. For this local POC, a trusted teammate can mint a token with the shared local secret; a production design would need delegated OAuth/token exchange and independent key management.
+The timestamps above illustrate claim shape only. Mint current tokens with `python -m app.tokens --tenant toyota-demo --employee EMP-001` from `backend/`, after setting `.env`. The secret stays on the NMR backend/local integration environment and never enters the browser bundle. The adapter must not construct employee identity from a chat prompt or arbitrary HTTP header. For this local POC, the integration process can mint a token with the shared local secret; a production design would need delegated OAuth/token exchange and independent key management.
 
 Every client request is checked in this order: valid token and role/scope; tenant master policy; tenant service policy; employee belongs to tenant and is active; employee is allowed to access the service. The administrator route uses a separate admin token. If the master is off, new calls receive `403 MCP_ACCESS_DISABLED`. If a service is off while master is on, its calls receive `403 SERVICE_ACCESS_DISABLED`. These backend checks run on every invocation even if tool discovery still lists a tool. Previously returned chat content cannot be revoked retroactively.
 
@@ -98,8 +98,8 @@ The backend returns a generated `X-Request-ID` response header, or echoes a supp
 
 `401 UNAUTHENTICATED` means missing, invalid, or expired token. `403 INSUFFICIENT_PERMISSIONS` means wrong role, scope or employee service eligibility; `403 RESOURCE_NOT_ACCESSIBLE` means the signed employee identity does not belong to the signed tenant; `403 MCP_ACCESS_DISABLED` and `403 SERVICE_ACCESS_DISABLED` reflect master and per-service policy. `404` means absent admin-scoped tenant/employee or service record. `422` means invalid request shape. Protected responses include `Cache-Control: no-store`. Successful and denied client calls record request ID, tenant, employee, service, outcome, reason, and timestamp. Tokens and passwords are never stored in audit events.
 
-## Teammate handoff decisions
+## Integration decisions
 
-1. Agree on the adapter host/port and local token handoff. Do not place the signing secret in the Toyota browser.
+1. Configure the adapter host/port and local token exchange. Do not place the signing secret in the Toyota browser.
 2. Confirm final MCP tool names and response formatting. The NMR REST route names above are implemented and stable for this POC.
 3. Demonstrate stock ON/OFF/ON while pension remains available, then master OFF/ON. The same centralized policy applies to the other service routes and both calculator routes.

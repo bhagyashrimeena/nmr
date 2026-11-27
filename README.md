@@ -1,15 +1,15 @@
 ﻿# NMR Workplace Finance
 
-NMR's provider-side application for five workplace finance services. The React portal connects to a FastAPI backend with persisted tenant settings, financial and workflow records, and request audit. It runs locally with synthetic clients and participants. The Toyota chatbot and MCP adapter are owned separately and are not included here.
+NMR's provider-side application for five workplace finance services. The React portal connects to a FastAPI backend with persisted tenant settings, financial and workflow records, and request audit. It runs locally with synthetic clients and participants. The Toyota chatbot and MCP adapter are outside this repository.
 
-**Handoff status:** All five provider workbenches, the participant directory, operational reports, stock payroll and purchase controls, and master/per-service external access switches are implemented. The backend remains the authority for financial state and permissions. The [current limits](#current-limits) matter when planning the Toyota integration.
+**Implementation status:** All five provider workbenches, the participant directory, operational reports, stock payroll and purchase controls, and master/per-service external access switches are implemented. The backend remains the authority for financial state and permissions. The [current limits](#current-limits) matter when planning the Toyota integration.
 
 ## Layout
 
 - `backend/app/`: API, domain workflows, database models, migrations, access control, audit, and fixed local records.
 - `backend/tests/`: API, domain, policy, and tenant-isolation tests.
 - `frontend/`: React and TypeScript provider portal.
-- `docs/v2-api-contract.md`: endpoint, identity, permission, error, and audit contract for the MCP teammate.
+- `docs/v2-api-contract.md`: endpoint, identity, permission, error, and audit contract for MCP integration.
 - `docs/v2-implementation-status.md`: architecture, completed milestones, and remaining work.
 - `docs/verification-report.md`: source-backed business scenarios, screenshots, verification results, and current limits.
 - `docs/specialist-workbenches.md`: service-by-service portal map and browser verification.
@@ -71,7 +71,7 @@ MCP Access Management stores one master and five service switches per tenant. Ne
 
 The Toyota records include `EMP-001`, `EMP-002`, and `EMP-003`; `SEC-001` belongs to Sakura Mobility. Additional participant IDs begin `TYO-`, `SAK-`, and `AST-` for Toyota, Sakura Mobility, and Asterfield Industries. V2 records are fixed as of 26 November 2026. The original summary records use 25 November 2026.
 
-## MCP teammate handoff
+## MCP integration
 
 Use the documented `/api/v2/client/...` endpoints for employee-facing tools. The NMR provider does **not** include the Toyota chatbot or MCP server. One MCP server may expose tools across the five services. Do not expose `/api/v1/admin/...` or `/api/v2/admin/...` through those tools.
 

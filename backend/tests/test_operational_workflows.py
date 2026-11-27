@@ -6,7 +6,7 @@ from conftest import admin_token, auth, employee_token
 
 
 def operator_token(tenant="toyota-demo", scopes=None):
-    return mint_token(sub="operator:stock-team", role="operator", tenant_id=tenant,
+    return mint_token(sub="operator:stock-operations", role="operator", tenant_id=tenant,
                       scopes=scopes or ["ops:stock:read", "ops:stock:write"])
 
 
